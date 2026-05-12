@@ -1,5 +1,5 @@
 <?php
-
+require  "bd_config.php";
 function startSession(): void {
     if (session_status() === PHP_SESSION_NONE) {
         session_set_cookie_params([
@@ -33,11 +33,14 @@ function requireAdmin(): int
 }
 
 /**VALIDAÇão */
-function email(string $email): bool
+function verify_email(string $email): bool
 {
     return (bool) filter_var($email, FILTER_VALIDATE_EMAIL);
 }
 function sanitize(string $valor): string
 {
     return htmlspecialchars(trim($valor), ENT_QUOTES, "UTF-8");
+}
+function hash_generate(string $password): string {
+    return password_hash($password, PASSWORD_DEFAULT);
 }
