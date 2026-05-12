@@ -44,3 +44,6 @@ function sanitize(string $valor): string
 function hash_generate(string $password): string {
     return password_hash($password, PASSWORD_DEFAULT);
 }
+function dificulty() : array {
+    return [1=>"facil",2=>"medio",3=>"dificil"];
+}

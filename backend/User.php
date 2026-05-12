@@ -1,7 +1,5 @@
 <?php
-require_once __DIR__ . "./backend/suporte/bd_config.php";
-require_once "./suporte/utilitarios.php";
-require_once "./suporte/Model.php";
+require "/suporte";
 if (!empty($_POST["submit"])) {
     $nome = $_POST["name"];
     $email = $_POST["email"];
