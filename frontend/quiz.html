@@ -1,0 +1,1660 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Quiz · TechQuiz Arena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#080b10;
+  --surface:#0d1117;
+  --panel:#111820;
+  --panel2:#141c26;
+  --border:rgba(255,255,255,0.07);
+  --border-hi:rgba(255,255,255,0.14);
+  --accent:#00e5ff;
+  --accent2:#7b2fff;
+  --accent3:#ff4f7b;
+  --gold:#ffd84d;
+  --text:#e8edf5;
+  --muted:#5a6a7e;
+  --success:#00e099;
+  --danger:#ff4f7b;
+  --warn:#ff8c42;
+  --font-head:'Syne',sans-serif;
+  --font-mono:'DM Mono',monospace;
+  --font-body:'Outfit',sans-serif;
+}
+
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-body);overflow-x:hidden}
+
+/* ── BG CANVAS ── */
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity:0.025;z-index:1;pointer-events:none
+}
+
+/* ── SCREENS ── */
+.screen{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .4s ease}
+.screen.active{opacity:1;pointer-events:all}
+
+/* ══════════════════════════════════════
+   LOBBY SCREEN
+══════════════════════════════════════ */
+#lobby-screen{flex-direction:column;gap:0;align-items:stretch;padding:0;overflow:auto}
+
+.lobby-wrap{
+  position:relative;z-index:2;width:100%;max-width:860px;margin:0 auto;padding:32px 20px;
+  display:flex;flex-direction:column;gap:28px;
+}
+
+.lobby-header{
+  display:flex;align-items:center;gap:16px;
+  animation:fadeSlideUp .6s ease both;
+}
+.back-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:8px 14px;border-radius:10px;
+  background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  color:var(--muted);font-size:13px;cursor:pointer;transition:all .2s;text-decoration:none;font-family:var(--font-body)
+}
+.back-btn:hover{border-color:var(--border-hi);color:var(--text)}
+.lobby-title{
+  font-family:var(--font-head);font-size:28px;font-weight:800;letter-spacing:-.8px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.lobby-subtitle{font-size:13px;color:var(--muted);margin-left:auto;font-family:var(--font-mono)}
+
+/* CONFIG CARD */
+.config-card{
+  background:rgba(13,17,23,0.9);backdrop-filter:blur(20px);
+  border:1px solid var(--border);border-radius:20px;padding:28px;
+  animation:fadeSlideUp .6s .1s ease both;
+}
+.config-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px}
+
+.config-group label{
+  display:block;font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;
+  color:var(--muted);margin-bottom:8px
+}
+.config-select,.config-input{
+  width:100%;padding:11px 14px;border-radius:11px;
+  background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  color:var(--text);font-family:var(--font-body);font-size:13.5px;
+  transition:all .2s;outline:none;-webkit-appearance:none;appearance:none
+}
+.config-select:focus,.config-input:focus{border-color:rgba(0,229,255,0.3);background:rgba(0,229,255,0.04)}
+
+/* MODE BUTTONS */
+.mode-row{display:flex;gap:10px;flex-wrap:wrap}
+.mode-btn{
+  flex:1;min-width:130px;padding:14px 12px;border-radius:13px;
+  background:rgba(255,255,255,0.03);border:1px solid var(--border);
+  cursor:pointer;transition:all .25s;text-align:left;
+}
+.mode-btn:hover{border-color:var(--border-hi);background:rgba(255,255,255,0.06)}
+.mode-btn.selected{
+  background:linear-gradient(135deg,rgba(0,229,255,0.1),rgba(123,47,255,0.08));
+  border-color:rgba(0,229,255,0.35);
+}
+.mode-icon{font-size:22px;margin-bottom:6px}
+.mode-name{font-family:var(--font-head);font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px}
+.mode-desc{font-size:11.5px;color:var(--muted)}
+
+/* CATEGORY GRID */
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.cat-chip{
+  padding:9px 10px;border-radius:10px;
+  background:rgba(255,255,255,0.03);border:1px solid var(--border);
+  cursor:pointer;transition:all .2s;text-align:center;
+  font-size:12px;color:var(--muted);
+}
+.cat-chip:hover{border-color:var(--border-hi);color:var(--text)}
+.cat-chip.selected{
+  background:rgba(123,47,255,0.12);border-color:rgba(123,47,255,0.4);color:var(--text)
+}
+.cat-chip .cat-emoji{display:block;font-size:18px;margin-bottom:4px}
+
+/* LOBBY START */
+.lobby-start-card{
+  background:linear-gradient(135deg,rgba(0,229,255,0.05),rgba(123,47,255,0.08));
+  border:1px solid rgba(0,229,255,0.15);border-radius:20px;padding:24px 28px;
+  display:flex;align-items:center;gap:20px;
+  animation:fadeSlideUp .6s .2s ease both;
+}
+.start-info{flex:1}
+.start-info .label{font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;color:var(--muted);margin-bottom:6px}
+.start-summary{display:flex;gap:20px;flex-wrap:wrap}
+.summary-item{display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:500}
+.summary-dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+
+.btn-start{
+  display:flex;align-items:center;gap:10px;
+  padding:14px 28px;border-radius:14px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#000;font-family:var(--font-head);font-size:15px;font-weight:800;
+  border:none;cursor:pointer;transition:all .25s;flex-shrink:0;
+  box-shadow:0 0 30px rgba(0,229,255,0.25);
+  letter-spacing:-.3px;
+}
+.btn-start:hover{transform:translateY(-2px);box-shadow:0 0 40px rgba(0,229,255,0.4)}
+.btn-start:active{transform:translateY(0)}
+
+/* ══════════════════════════════════════
+   GAME SCREEN
+══════════════════════════════════════ */
+#game-screen{flex-direction:column;padding:0;align-items:stretch;overflow:hidden}
+
+.game-wrap{
+  position:relative;z-index:2;width:100%;height:100vh;
+  display:flex;flex-direction:column;
+}
+
+/* HUD */
+.hud{
+  display:flex;align-items:center;gap:12px;padding:16px 24px;
+  background:rgba(8,11,16,0.85);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;
+}
+.hud-left{display:flex;align-items:center;gap:10px}
+.hud-right{display:flex;align-items:center;gap:10px;margin-left:auto}
+
+.hud-pill{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 12px;border-radius:100px;
+  background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  font-family:var(--font-mono);font-size:12px;color:var(--text)
+}
+.hud-pill.accent{border-color:rgba(0,229,255,0.2);background:rgba(0,229,255,0.06);color:var(--accent)}
+.hud-pill.gold{border-color:rgba(255,216,77,0.2);background:rgba(255,216,77,0.06);color:var(--gold)}
+.hud-pill.danger{border-color:rgba(255,79,123,0.2);background:rgba(255,79,123,0.06);color:var(--danger)}
+.hud-pill.success{border-color:rgba(0,224,153,0.2);background:rgba(0,224,153,0.06);color:var(--success)}
+.pill-icon{font-size:14px}
+
+/* STREAK FIRE */
+.streak-badge{
+  display:flex;align-items:center;gap:4px;
+  padding:5px 11px;border-radius:100px;
+  font-family:var(--font-mono);font-size:12px;font-weight:500;
+  background:rgba(255,140,66,0.1);border:1px solid rgba(255,140,66,0.25);color:var(--warn);
+  transition:all .3s;
+}
+.streak-badge.active{
+  background:rgba(255,140,66,0.18);border-color:rgba(255,140,66,0.5);
+  box-shadow:0 0 12px rgba(255,140,66,0.2);
+}
+
+/* LIVES */
+.lives{display:flex;gap:4px}
+.life{font-size:16px;transition:all .3s}
+.life.lost{opacity:.2;filter:grayscale(1)}
+
+/* PROGRESS BAR */
+.progress-track{
+  height:3px;background:rgba(255,255,255,0.06);flex-shrink:0;position:relative
+}
+.progress-fill{
+  height:100%;
+  background:linear-gradient(90deg,var(--accent2),var(--accent));
+  transition:width .6s cubic-bezier(.4,0,.2,1);
+  position:relative;
+}
+.progress-fill::after{
+  content:'';position:absolute;right:0;top:-2px;
+  width:8px;height:8px;border-radius:50%;
+  background:var(--accent);box-shadow:0 0 8px var(--accent);
+}
+
+/* QUESTION AREA */
+.question-area{
+  flex:1;overflow-y:auto;display:flex;align-items:center;justify-content:center;
+  padding:24px;
+}
+.question-card{
+  width:100%;max-width:720px;
+  animation:qSlideIn .5s cubic-bezier(.4,0,.2,1) both;
+}
+
+/* TIMER ARC */
+.timer-ring-wrap{display:flex;justify-content:center;margin-bottom:20px}
+.timer-ring-outer{
+  position:relative;width:80px;height:80px;
+}
+.timer-svg{transform:rotate(-90deg);width:80px;height:80px}
+.timer-track{fill:none;stroke:rgba(255,255,255,0.06);stroke-width:4}
+.timer-arc{
+  fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round;
+  stroke-dasharray:220;stroke-dashoffset:0;
+  transition:stroke-dashoffset .9s linear,stroke .3s;
+}
+.timer-num{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:20px;font-weight:500;color:var(--accent);
+  transition:color .3s;
+}
+.timer-label{font-size:8px;letter-spacing:1px;color:var(--muted);margin-top:-2px}
+
+/* Q META */
+.q-meta{
+  display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap
+}
+.q-num{font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+.q-cat{
+  padding:3px 10px;border-radius:100px;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.5px;
+  background:rgba(123,47,255,0.12);border:1px solid rgba(123,47,255,0.25);color:#b47aff
+}
+.q-diff{
+  padding:3px 10px;border-radius:100px;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.5px;
+}
+.q-diff.easy{background:rgba(0,224,153,0.1);border:1px solid rgba(0,224,153,0.25);color:var(--success)}
+.q-diff.medium{background:rgba(255,140,66,0.1);border:1px solid rgba(255,140,66,0.25);color:var(--warn)}
+.q-diff.hard{background:rgba(255,79,123,0.1);border:1px solid rgba(255,79,123,0.25);color:var(--danger)}
+.q-pts{margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--gold)}
+
+/* QUESTION TEXT */
+.q-text{
+  font-family:var(--font-head);font-size:22px;font-weight:700;line-height:1.4;
+  letter-spacing:-.4px;margin-bottom:24px;min-height:60px;
+}
+
+/* OPTIONS */
+.options{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+
+.opt-btn{
+  display:flex;align-items:center;gap:14px;
+  padding:16px 18px;border-radius:14px;
+  background:rgba(13,17,23,0.8);border:1px solid var(--border);
+  cursor:pointer;transition:all .25s;text-align:left;width:100%;
+  font-family:var(--font-body);font-size:14.5px;color:var(--text);
+  position:relative;overflow:hidden;
+}
+.opt-btn::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,rgba(0,229,255,0.06),transparent);
+  opacity:0;transition:opacity .25s;pointer-events:none
+}
+.opt-btn:hover:not(:disabled){
+  border-color:rgba(0,229,255,0.25);background:rgba(0,229,255,0.04)
+}
+.opt-btn:hover:not(:disabled)::before{opacity:1}
+.opt-btn:active:not(:disabled){transform:scale(.99)}
+
+.opt-letter{
+  width:34px;height:34px;border-radius:9px;flex-shrink:0;
+  background:rgba(255,255,255,0.06);border:1px solid var(--border);
+  display:grid;place-items:center;
+  font-family:var(--font-mono);font-size:13px;font-weight:500;
+  transition:all .25s;
+}
+.opt-text{flex:1}
+.opt-icon{margin-left:auto;font-size:18px;opacity:0;transition:opacity .3s}
+
+/* ANSWER STATES */
+.opt-btn.correct{
+  border-color:rgba(0,224,153,0.5) !important;
+  background:rgba(0,224,153,0.1) !important;
+  animation:correctPulse .4s ease;
+}
+.opt-btn.correct .opt-letter{
+  background:var(--success);border-color:var(--success);color:#000
+}
+.opt-btn.correct .opt-icon{opacity:1;color:var(--success)}
+.opt-btn.wrong{
+  border-color:rgba(255,79,123,0.5) !important;
+  background:rgba(255,79,123,0.08) !important;
+  animation:wrongShake .4s ease;
+}
+.opt-btn.wrong .opt-letter{
+  background:rgba(255,79,123,0.25);border-color:var(--danger);color:var(--danger)
+}
+.opt-btn.wrong .opt-icon{opacity:1;color:var(--danger)}
+.opt-btn:disabled{cursor:not-allowed}
+
+/* EXPLAIN BOX */
+.explain-box{
+  padding:14px 18px;border-radius:12px;
+  background:rgba(0,224,153,0.06);border:1px solid rgba(0,224,153,0.15);
+  display:none;
+}
+.explain-box.show{display:block;animation:fadeSlideUp .35s ease both}
+.explain-label{font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;color:var(--success);margin-bottom:6px}
+.explain-text{font-size:13.5px;color:var(--text);line-height:1.6}
+
+/* NEXT BTN */
+.btn-next{
+  display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+  padding:14px;border-radius:13px;margin-top:12px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#000;font-family:var(--font-head);font-size:14px;font-weight:800;
+  border:none;cursor:pointer;transition:all .25s;
+  letter-spacing:-.3px;opacity:0;pointer-events:none;
+  box-shadow:0 0 24px rgba(0,229,255,0.2);
+}
+.btn-next.show{opacity:1;pointer-events:all;animation:fadeSlideUp .3s ease both}
+.btn-next:hover{transform:translateY(-1px);box-shadow:0 0 32px rgba(0,229,255,0.35)}
+
+/* ══════════════════════════════════════
+   RESULT SCREEN
+══════════════════════════════════════ */
+#result-screen{flex-direction:column;overflow-y:auto;align-items:stretch;padding:0}
+
+.result-wrap{
+  position:relative;z-index:2;width:100%;max-width:780px;
+  margin:0 auto;padding:32px 20px;
+  display:flex;flex-direction:column;gap:24px;
+}
+
+/* RESULT HERO */
+.result-hero{
+  text-align:center;padding:40px 28px 32px;
+  background:linear-gradient(135deg,rgba(13,17,23,0.95),rgba(20,28,38,0.9));
+  backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:24px;
+  position:relative;overflow:hidden;
+  animation:fadeSlideUp .6s ease both;
+}
+.result-hero::before{
+  content:'';position:absolute;top:-80px;left:50%;transform:translateX(-50%);
+  width:400px;height:300px;
+  background:radial-gradient(ellipse,rgba(0,229,255,0.07),transparent 70%);
+  pointer-events:none
+}
+.result-emoji{font-size:72px;margin-bottom:12px;display:block;animation:bounceIn .6s .2s ease both}
+.result-grade{
+  font-family:var(--font-head);font-size:16px;font-weight:800;letter-spacing:2px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:6px;
+}
+.result-message{font-size:14px;color:var(--muted);margin-bottom:28px}
+
+/* SCORE RING */
+.score-ring-wrap{display:flex;justify-content:center;margin-bottom:24px}
+.score-ring-outer{position:relative;width:140px;height:140px}
+.score-svg{transform:rotate(-90deg);width:140px;height:140px}
+.score-track{fill:none;stroke:rgba(255,255,255,0.06);stroke-width:8}
+.score-arc{
+  fill:none;stroke:url(#scoreGrad);stroke-width:8;stroke-linecap:round;
+  stroke-dasharray:380;stroke-dashoffset:380;
+  transition:stroke-dashoffset 1.5s cubic-bezier(.4,0,.2,1) .3s;
+}
+.score-center{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+}
+.score-pct{
+  font-family:var(--font-head);font-size:36px;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.score-label{font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:1px}
+
+/* RESULT STATS */
+.result-stats{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.rstat{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:14px 20px;border-radius:14px;min-width:110px;
+  background:rgba(255,255,255,0.03);border:1px solid var(--border);
+}
+.rstat-val{font-family:var(--font-head);font-size:22px;font-weight:800}
+.rstat-label{font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.5px}
+
+/* XP GAINED */
+.xp-gain-card{
+  background:linear-gradient(135deg,rgba(123,47,255,0.08),rgba(0,229,255,0.05));
+  border:1px solid rgba(123,47,255,0.2);border-radius:18px;padding:20px 24px;
+  display:flex;align-items:center;gap:16px;
+  animation:fadeSlideUp .6s .15s ease both;
+}
+.xp-gain-icon{font-size:32px;flex-shrink:0}
+.xp-gain-info{flex:1}
+.xp-gain-label{font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;color:var(--muted);margin-bottom:6px}
+.xp-gain-val{font-family:var(--font-head);font-size:24px;font-weight:800;color:var(--gold)}
+.xp-gain-bar-track{height:6px;background:rgba(255,255,255,0.06);border-radius:6px;margin-top:8px;overflow:hidden}
+.xp-gain-bar-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--accent2),var(--accent));width:0;transition:width 1.5s .6s ease}
+
+/* ACHIEVEMENTS */
+.achievements-card{
+  background:rgba(13,17,23,0.85);backdrop-filter:blur(16px);
+  border:1px solid var(--border);border-radius:18px;padding:20px 24px;
+  animation:fadeSlideUp .6s .2s ease both;
+}
+.achievements-title{font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;color:var(--muted);margin-bottom:14px}
+.ach-list{display:flex;flex-direction:column;gap:10px}
+.ach-item{
+  display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;
+  background:rgba(255,255,255,0.03);border:1px solid var(--border);
+}
+.ach-icon{font-size:24px}
+.ach-info{flex:1}
+.ach-name{font-size:13.5px;font-weight:600;color:var(--text);margin-bottom:2px}
+.ach-desc{font-size:11.5px;color:var(--muted)}
+.ach-badge{
+  padding:3px 10px;border-radius:100px;
+  font-family:var(--font-mono);font-size:10px;
+  background:rgba(255,216,77,0.1);border:1px solid rgba(255,216,77,0.25);color:var(--gold)
+}
+
+/* HISTORY */
+.history-card{
+  background:rgba(13,17,23,0.85);backdrop-filter:blur(16px);
+  border:1px solid var(--border);border-radius:18px;padding:20px 24px;
+  animation:fadeSlideUp .6s .25s ease both;
+}
+.history-title{font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;color:var(--muted);margin-bottom:14px}
+.history-list{display:flex;flex-direction:column;gap:6px}
+.hist-row{
+  display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;
+  background:rgba(255,255,255,0.02);transition:background .2s;cursor:default;
+}
+.hist-row:hover{background:rgba(255,255,255,0.04)}
+.hist-idx{font-family:var(--font-mono);font-size:11px;color:var(--muted);width:20px;flex-shrink:0}
+.hist-q{flex:1;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-outcome{font-size:14px;flex-shrink:0}
+.hist-time{font-family:var(--font-mono);font-size:11px;color:var(--muted);flex-shrink:0}
+
+/* RESULT ACTIONS */
+.result-actions{
+  display:flex;gap:12px;flex-wrap:wrap;
+  animation:fadeSlideUp .6s .3s ease both;
+}
+.btn-again{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:14px;border-radius:13px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#000;font-family:var(--font-head);font-size:14px;font-weight:800;
+  border:none;cursor:pointer;transition:all .25s;letter-spacing:-.3px;
+  box-shadow:0 0 24px rgba(0,229,255,0.2);min-width:160px;
+}
+.btn-again:hover{transform:translateY(-2px);box-shadow:0 0 36px rgba(0,229,255,0.35)}
+.btn-dash{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:14px 22px;border-radius:13px;
+  background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  color:var(--text);font-family:var(--font-body);font-size:14px;font-weight:600;
+  text-decoration:none;cursor:pointer;transition:all .25s;
+}
+.btn-dash:hover{border-color:var(--border-hi);background:rgba(255,255,255,0.07)}
+
+/* ── PARTICLES ── */
+.particle{
+  position:fixed;border-radius:50%;pointer-events:none;z-index:99;
+  animation:particleFloat 1.2s ease-out forwards;
+}
+
+/* ── TOAST ── */
+#toast-container{position:fixed;bottom:24px;right:24px;z-index:200;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 16px;border-radius:12px;
+  background:rgba(13,17,23,0.95);backdrop-filter:blur(20px);
+  border:1px solid var(--border);
+  font-size:13.5px;color:var(--text);
+  animation:toastIn .35s cubic-bezier(.4,0,.2,1) both;
+  pointer-events:all;min-width:240px;
+}
+.toast.success{border-color:rgba(0,224,153,0.3)}
+.toast.error{border-color:rgba(255,79,123,0.3)}
+.toast.info{border-color:rgba(0,229,255,0.3)}
+.toast-icon{font-size:18px;flex-shrink:0}
+.toast.out{animation:toastOut .3s ease forwards}
+
+/* ── COMBO POPUP ── */
+.combo-pop{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);
+  z-index:150;text-align:center;pointer-events:none;
+  font-family:var(--font-head);
+  animation:comboPop .8s ease forwards;
+}
+.combo-pop .combo-label{
+  font-size:60px;font-weight:800;
+  background:linear-gradient(135deg,var(--gold),var(--warn));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  text-shadow:none;
+}
+.combo-pop .combo-sub{font-size:14px;color:var(--gold);letter-spacing:2px;margin-top:-6px}
+
+/* ── LOADING OVERLAY ── */
+#loader{
+  position:fixed;inset:0;z-index:300;
+  background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+  transition:opacity .4s ease;
+}
+#loader.hidden{opacity:0;pointer-events:none}
+.loader-logo{font-family:var(--font-head);font-size:28px;font-weight:800;letter-spacing:-.5px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.loader-bar-track{width:200px;height:3px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden}
+.loader-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:3px;width:0;animation:loaderFill .8s ease forwards}
+.loader-text{font-family:var(--font-mono);font-size:11px;color:var(--muted);letter-spacing:1px}
+
+/* ── KEYFRAMES ── */
+@keyframes fadeSlideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes qSlideIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+@keyframes correctPulse{0%,100%{box-shadow:none}50%{box-shadow:0 0 30px rgba(0,224,153,0.35)}}
+@keyframes wrongShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@keyframes bounceIn{0%{transform:scale(0) rotate(-15deg)}60%{transform:scale(1.2) rotate(5deg)}100%{transform:scale(1) rotate(0deg)}}
+@keyframes particleFloat{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0)}}
+@keyframes toastIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+@keyframes toastOut{to{opacity:0;transform:translateX(24px)}}
+@keyframes comboPop{0%{transform:translate(-50%,-50%) scale(0);opacity:1}60%{transform:translate(-50%,-60%) scale(1.2);opacity:1}80%{transform:translate(-50%,-65%) scale(1);opacity:1}100%{transform:translate(-50%,-80%) scale(0.8);opacity:0}}
+@keyframes loaderFill{to{width:100%}}
+@keyframes scoreArcIn{to{stroke-dashoffset:var(--target-offset)}}
+
+/* ── RESPONSIVE ── */
+@media(max-width:640px){
+  .lobby-wrap{padding:16px}
+  .config-grid{grid-template-columns:1fr}
+  .q-text{font-size:18px}
+  .hud{padding:12px 16px;gap:8px}
+  .hud-pill{padding:5px 9px;font-size:11px}
+  .result-stats{gap:10px}
+  .rstat{min-width:90px;padding:12px 14px}
+  .score-ring-outer{width:120px;height:120px}
+  .score-svg{width:120px;height:120px}
+  .score-pct{font-size:28px}
+  .lobby-title{font-size:22px}
+  .mode-row{gap:8px}
+  .result-actions{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-logo">TechQuiz Arena</div>
+  <div class="loader-bar-track"><div class="loader-bar-fill"></div></div>
+  <div class="loader-text">A PREPARAR O QUIZ...</div>
+</div>
+
+<!-- BACKGROUND CANVAS -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<!-- ══════════════════════════════════════
+     LOBBY SCREEN
+══════════════════════════════════════ -->
+<div id="lobby-screen" class="screen">
+  <div class="lobby-wrap">
+
+    <div class="lobby-header">
+      <a href="dashboard.html" class="back-btn">← Dashboard</a>
+      <h1 class="lobby-title">Configurar Quiz</h1>
+      <span class="lobby-subtitle" id="lobby-time"></span>
+    </div>
+
+    <!-- GAME MODE -->
+    <div class="config-card">
+      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;color:var(--muted);margin-bottom:14px">MODO DE JOGO</div>
+      <div class="mode-row">
+        <button class="mode-btn selected" data-mode="classic" onclick="selectMode(this)">
+          <div class="mode-icon">🎯</div>
+          <div class="mode-name">Clássico</div>
+          <div class="mode-desc">10 perguntas, ritmo normal</div>
+        </button>
+        <button class="mode-btn" data-mode="speed" onclick="selectMode(this)">
+          <div class="mode-icon">⚡</div>
+          <div class="mode-name">Modo Rápido</div>
+          <div class="mode-desc">5s por pergunta</div>
+        </button>
+        <button class="mode-btn" data-mode="survival" onclick="selectMode(this)">
+          <div class="mode-icon">💀</div>
+          <div class="mode-name">Sobrevivência</div>
+          <div class="mode-desc">3 vidas, sem mercy</div>
+        </button>
+        <button class="mode-btn" data-mode="marathon" onclick="selectMode(this)">
+          <div class="mode-icon">🏃</div>
+          <div class="mode-name">Maratona</div>
+          <div class="mode-desc">20 perguntas seguidas</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="config-card">
+      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;color:var(--muted);margin-bottom:16px">CONFIGURAÇÕES</div>
+      <div class="config-grid">
+        <div class="config-group">
+          <label>DIFICULDADE</label>
+          <select class="config-select" id="cfg-difficulty">
+            <option value="all">Todas as dificuldades</option>
+            <option value="easy">Fácil</option>
+            <option value="medium">Médio</option>
+            <option value="hard">Difícil</option>
+          </select>
+        </div>
+        <div class="config-group">
+          <label>NÚMERO DE PERGUNTAS</label>
+          <select class="config-select" id="cfg-count">
+            <option value="5">5 perguntas</option>
+            <option value="10" selected>10 perguntas</option>
+            <option value="15">15 perguntas</option>
+            <option value="20">20 perguntas</option>
+          </select>
+        </div>
+        <div class="config-group">
+          <label>TEMPO POR PERGUNTA</label>
+          <select class="config-select" id="cfg-time">
+            <option value="10">10 segundos</option>
+            <option value="20" selected>20 segundos</option>
+            <option value="30">30 segundos</option>
+            <option value="60">60 segundos</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- CATEGORIES -->
+    <div class="config-card">
+      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;color:var(--muted);margin-bottom:14px">CATEGORIAS <span style="color:var(--accent2)">(clica para selecionar)</span></div>
+      <div class="cat-grid" id="cat-grid">
+        <!-- Preenchido por JS -->
+      </div>
+    </div>
+
+    <!-- START -->
+    <div class="lobby-start-card">
+      <div class="start-info">
+        <div class="label">RESUMO DO QUIZ</div>
+        <div class="start-summary">
+          <div class="summary-item"><span class="summary-dot"></span><span id="sum-mode">Clássico</span></div>
+          <div class="summary-item"><span class="summary-dot" style="background:var(--gold)"></span><span id="sum-count">10 perguntas</span></div>
+          <div class="summary-item"><span class="summary-dot" style="background:var(--success)"></span><span id="sum-time">20s / pergunta</span></div>
+        </div>
+      </div>
+      <button class="btn-start" onclick="startQuiz()">
+        <span>Iniciar</span>
+        <span style="font-size:18px">→</span>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     GAME SCREEN
+══════════════════════════════════════ -->
+<div id="game-screen" class="screen">
+  <div class="game-wrap">
+
+    <!-- HUD -->
+    <div class="hud">
+      <div class="hud-left">
+        <div class="hud-pill accent"><span class="pill-icon">❓</span><span id="hud-qnum">1/10</span></div>
+        <div class="hud-pill gold"><span class="pill-icon">⭐</span><span id="hud-score">0</span></div>
+        <div class="streak-badge" id="hud-streak"><span>🔥</span><span id="streak-num">0</span></div>
+      </div>
+      <div class="hud-right">
+        <div class="hud-pill" id="hud-combo" style="display:none"><span class="pill-icon">⚡</span><span id="combo-num">x1</span></div>
+        <div class="lives" id="hud-lives"></div>
+        <button onclick="quitGame()" style="background:none;border:1px solid var(--border);color:var(--muted);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-family:var(--font-body);transition:all .2s" onmouseover="this.style.borderColor='rgba(255,79,123,0.4)';this.style.color='var(--danger)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">✕ Sair</button>
+      </div>
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+
+    <!-- QUESTION -->
+    <div class="question-area">
+      <div class="question-card" id="question-card">
+
+        <!-- TIMER -->
+        <div class="timer-ring-wrap">
+          <div class="timer-ring-outer">
+            <svg class="timer-svg" viewBox="0 0 80 80">
+              <defs>
+                <linearGradient id="timerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#00e5ff"/>
+                  <stop offset="100%" stop-color="#7b2fff"/>
+                </linearGradient>
+              </defs>
+              <circle class="timer-track" cx="40" cy="40" r="35"/>
+              <circle class="timer-arc" id="timer-arc" cx="40" cy="40" r="35"/>
+            </svg>
+            <div class="timer-num">
+              <span id="timer-display">20</span>
+              <span class="timer-label">SEG</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- META -->
+        <div class="q-meta">
+          <span class="q-num" id="q-num">Pergunta 1 de 10</span>
+          <span class="q-cat" id="q-cat">Hardware</span>
+          <span class="q-diff" id="q-diff">Fácil</span>
+          <span class="q-pts" id="q-pts">+100 XP</span>
+        </div>
+
+        <!-- TEXT -->
+        <div class="q-text" id="q-text"></div>
+
+        <!-- OPTIONS -->
+        <div class="options" id="options"></div>
+
+        <!-- EXPLAIN -->
+        <div class="explain-box" id="explain-box">
+          <div class="explain-label">💡 EXPLICAÇÃO</div>
+          <div class="explain-text" id="explain-text"></div>
+        </div>
+
+        <!-- NEXT -->
+        <button class="btn-next" id="btn-next" onclick="nextQuestion()">
+          <span id="btn-next-label">Próxima pergunta</span>
+          <span>→</span>
+        </button>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     RESULT SCREEN
+══════════════════════════════════════ -->
+<div id="result-screen" class="screen">
+  <div class="result-wrap">
+
+    <!-- HERO -->
+    <div class="result-hero">
+      <span class="result-emoji" id="result-emoji">🏆</span>
+      <div class="result-grade" id="result-grade">EXCELENTE</div>
+      <div class="result-message" id="result-message">Desempenho incrível! Continua assim!</div>
+
+      <!-- SCORE RING -->
+      <div class="score-ring-wrap">
+        <div class="score-ring-outer">
+          <svg class="score-svg" viewBox="0 0 140 140">
+            <defs>
+              <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#7b2fff"/>
+                <stop offset="100%" stop-color="#00e5ff"/>
+              </linearGradient>
+            </defs>
+            <circle class="score-track" cx="70" cy="70" r="60"/>
+            <circle class="score-arc" id="score-arc" cx="70" cy="70" r="60"/>
+          </svg>
+          <div class="score-center">
+            <div class="score-pct" id="score-pct">0%</div>
+            <div class="score-label">ACERTOS</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STATS -->
+      <div class="result-stats">
+        <div class="rstat">
+          <div class="rstat-val" id="rs-correct" style="color:var(--success)">0</div>
+          <div class="rstat-label">CORRETAS</div>
+        </div>
+        <div class="rstat">
+          <div class="rstat-val" id="rs-wrong" style="color:var(--danger)">0</div>
+          <div class="rstat-label">ERRADAS</div>
+        </div>
+        <div class="rstat">
+          <div class="rstat-val" id="rs-time" style="color:var(--accent)">0s</div>
+          <div class="rstat-label">TEMPO MÉDIO</div>
+        </div>
+        <div class="rstat">
+          <div class="rstat-val" id="rs-streak" style="color:var(--warn)">0</div>
+          <div class="rstat-label">MAX STREAK</div>
+        </div>
+        <div class="rstat">
+          <div class="rstat-val" id="rs-pts" style="color:var(--gold)">0</div>
+          <div class="rstat-label">PONTOS</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- XP CARD -->
+    <div class="xp-gain-card">
+      <div class="xp-gain-icon">⚡</div>
+      <div class="xp-gain-info">
+        <div class="xp-gain-label">EXPERIÊNCIA GANHA</div>
+        <div class="xp-gain-val" id="xp-gain-val">+0 XP</div>
+        <div class="xp-gain-bar-track"><div class="xp-gain-bar-fill" id="xp-bar-fill"></div></div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted)">NÍVEL</div>
+        <div style="font-family:var(--font-head);font-size:22px;font-weight:800;color:var(--text)" id="xp-level">5</div>
+      </div>
+    </div>
+
+    <!-- ACHIEVEMENTS -->
+    <div class="achievements-card" id="achievements-card" style="display:none">
+      <div class="achievements-title">🏅 CONQUISTAS DESBLOQUEADAS</div>
+      <div class="ach-list" id="ach-list"></div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="history-card">
+      <div class="history-title">📋 HISTÓRICO DE RESPOSTAS</div>
+      <div class="history-list" id="history-list"></div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="result-actions">
+      <button class="btn-again" onclick="playAgain()">↺ Jogar Novamente</button>
+      <a href="dashboard.html" class="btn-dash">← Dashboard</a>
+      <a href="ranking.html" class="btn-dash">🏆 Ranking</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   TechQuiz Arena · quiz.js — v1.0
+   Core game engine — pure HTML/CSS/JS, no frameworks
+══════════════════════════════════════════════════════════════ */
+
+// ──────────────────────────────────────
+// QUESTION DATABASE
+// ──────────────────────────────────────
+const QUESTIONS = [
+  // HARDWARE
+  {id:1,cat:'Hardware',diff:'easy',pts:100,time:20,q:'Qual componente é responsável por processar as instruções de um computador?',opts:['GPU','RAM','CPU','SSD'],ans:2,exp:'O CPU (Central Processing Unit) é o cérebro do computador, responsável por executar as instruções dos programas.'},
+  {id:2,cat:'Hardware',diff:'medium',pts:150,time:20,q:'Qual é a função principal da memória RAM?',opts:['Armazenar dados permanentemente','Armazenar dados temporariamente em uso','Processar gráficos','Gerir energia do sistema'],ans:1,exp:'A RAM (Random Access Memory) é uma memória volátil que armazena dados e instruções temporariamente enquanto são utilizados pelo CPU.'},
+  {id:3,cat:'Hardware',diff:'hard',pts:200,time:25,q:'O que é o TDP de um processador?',opts:['Tamanho do Die do Processador','Taxa de Dados do Processador','Thermal Design Power (potência térmica)','Total de Dados Processados'],ans:2,exp:'TDP (Thermal Design Power) indica a máxima quantidade de calor que o sistema de arrefecimento precisa de dissipar.'},
+  {id:4,cat:'Hardware',diff:'easy',pts:100,time:20,q:'Que tipo de armazenamento é mais rápido?',opts:['HDD','CD-ROM','SSD','Disquete'],ans:2,exp:'O SSD (Solid State Drive) usa memória flash sem partes mecânicas, tornando-o muito mais rápido que o HDD.'},
+  {id:5,cat:'Hardware',diff:'medium',pts:150,time:20,q:'Qual barramento é usado para ligar a GPU à placa-mãe modernamente?',opts:['PCI','AGP','PCIe','ISA'],ans:2,exp:'O PCIe (PCI Express) é o barramento padrão moderno para GPUs, oferecendo alta largura de banda.'},
+
+  // SOFTWARE
+  {id:6,cat:'Software',diff:'easy',pts:100,time:20,q:'O que é um sistema operativo?',opts:['Um programa de edição de texto','Software que gere o hardware e recursos do computador','Um antivírus','Um browser web'],ans:1,exp:'O sistema operativo é o software fundamental que gere o hardware, recursos e fornece serviços para outros programas.'},
+  {id:7,cat:'Software',diff:'medium',pts:150,time:20,q:'O que significa "código aberto" (open source)?',opts:['Software gratuito','Software cujo código-fonte é público e modificável','Software sem bugs','Software da Microsoft'],ans:1,exp:'Open source significa que o código-fonte é disponibilizado publicamente, permitindo que qualquer pessoa o veja, modifique e distribua.'},
+  {id:8,cat:'Software',diff:'hard',pts:200,time:25,q:'O que é um deadlock em sistemas operativos?',opts:['Um erro de memória','Uma situação onde processos ficam bloqueados aguardando recursos uns dos outros','Um tipo de vírus','Uma função do sistema de ficheiros'],ans:1,exp:'Deadlock ocorre quando dois ou mais processos estão cada um à espera de um recurso detido pelo outro, criando um impasse.'},
+
+  // REDES
+  {id:9,cat:'Redes',diff:'easy',pts:100,time:20,q:'O que é um endereço IP?',opts:['Um tipo de cabo de rede','Identificador numérico único de um dispositivo em rede','Um protocolo de segurança','Uma marca de router'],ans:1,exp:'O endereço IP (Internet Protocol) é um identificador numérico único atribuído a cada dispositivo conectado a uma rede.'},
+  {id:10,cat:'Redes',diff:'medium',pts:150,time:20,q:'Qual é a diferença entre TCP e UDP?',opts:['TCP é mais rápido que UDP','TCP garante entrega ordenada; UDP é mais rápido mas sem garantias','UDP usa mais memória','Não há diferença'],ans:1,exp:'TCP garante entrega de dados com confirmação e ordenação. UDP é mais rápido mas sem garantias de entrega, ideal para streaming.'},
+  {id:11,cat:'Redes',diff:'medium',pts:150,time:20,q:'O que faz um router numa rede?',opts:['Amplifica o sinal WiFi','Encaminha pacotes entre diferentes redes','Armazena dados da rede','Protege contra malware'],ans:1,exp:'O router encaminha (roteia) pacotes de dados entre diferentes redes, determinando o melhor caminho para cada pacote.'},
+  {id:12,cat:'Redes',diff:'hard',pts:200,time:25,q:'Qual é a máscara de sub-rede padrão para uma rede de classe C?',opts:['255.0.0.0','255.255.0.0','255.255.255.0','192.168.1.0'],ans:2,exp:'A máscara 255.255.255.0 (/24) permite 254 hosts numa rede de classe C, sendo a mais comum em redes domésticas e pequenas empresas.'},
+
+  // PROGRAMAÇÃO
+  {id:13,cat:'Programação',diff:'easy',pts:100,time:20,q:'O que é um algoritmo?',opts:['Uma linguagem de programação','Um conjunto de instruções para resolver um problema','Um tipo de base de dados','Um erro de código'],ans:1,exp:'Um algoritmo é uma sequência finita e ordenada de instruções bem definidas para resolver um problema ou executar uma tarefa.'},
+  {id:14,cat:'Programação',diff:'medium',pts:150,time:20,q:'O que é recursividade em programação?',opts:['Um loop infinito','Uma função que chama a si própria','Um tipo de variável','Uma estrutura de dados'],ans:1,exp:'Recursividade é quando uma função se chama a si mesma. Requer sempre um caso base para evitar loop infinito.'},
+  {id:15,cat:'Programação',diff:'hard',pts:200,time:25,q:'Qual a complexidade temporal do algoritmo de ordenação QuickSort no pior caso?',opts:['O(n log n)','O(n)','O(n²)','O(log n)'],ans:2,exp:'No pior caso (pivot sempre o menor ou maior elemento), o QuickSort tem complexidade O(n²). Em média é O(n log n).'},
+
+  // CIBERSEGURANÇA
+  {id:16,cat:'Cibersegurança',diff:'easy',pts:100,time:20,q:'O que é phishing?',opts:['Um tipo de vírus que apaga ficheiros','Tentativa de obter informações sensíveis por engano','Um método de encriptação','Um tipo de firewall'],ans:1,exp:'Phishing é uma técnica de engenharia social onde o atacante finge ser uma entidade legítima para obter dados sensíveis como passwords.'},
+  {id:17,cat:'Cibersegurança',diff:'medium',pts:150,time:20,q:'O que é encriptação de ponta a ponta (end-to-end)?',opts:['Encriptação só no servidor','Encriptação que só os comunicantes podem decifrar','Encriptação de backups','Encriptação de redes WiFi'],ans:1,exp:'E2E encryption garante que só o remetente e destinatário podem ler as mensagens, nem mesmo o serviço intermediário tem acesso.'},
+  {id:18,cat:'Cibersegurança',diff:'hard',pts:200,time:25,q:'O que é um ataque de injeção SQL?',opts:['Ataque que sobrecarrega o servidor','Inserção de código SQL malicioso em campos de input para manipular a base de dados','Ataque por força bruta','Intercepção de tráfego de rede'],ans:1,exp:'SQL Injection ocorre quando o atacante insere código SQL em campos de formulário para manipular ou extrair dados da base de dados.'},
+
+  // JAVASCRIPT
+  {id:19,cat:'JavaScript',diff:'easy',pts:100,time:20,q:'Qual é a saída de: typeof null em JavaScript?',opts:['"null"','"undefined"','"object"','"boolean"'],ans:2,exp:'typeof null retorna "object" em JavaScript. É considerado um bug histórico da linguagem, mantido por razões de compatibilidade.'},
+  {id:20,cat:'JavaScript',diff:'medium',pts:150,time:20,q:'O que é uma Promise em JavaScript?',opts:['Uma função síncrona','Um objeto que representa a eventual conclusão ou falha de uma operação assíncrona','Um tipo de variável','Um loop assíncrono'],ans:1,exp:'Promise representa uma operação assíncrona que pode estar pendente, ser cumprida (fulfilled) ou rejeitada (rejected).'},
+  {id:21,cat:'JavaScript',diff:'hard',pts:200,time:25,q:'O que é o Event Loop em JavaScript?',opts:['Um tipo de loop for','Mecanismo que permite executar código não-bloqueante processando a call stack e callback queue','Um erro de memória','Uma API do browser'],ans:1,exp:'O Event Loop verifica continuamente se a call stack está vazia, e se sim, move callbacks da task queue para a stack — permitindo operações assíncronas.'},
+
+  // PYTHON
+  {id:22,cat:'Python',diff:'easy',pts:100,time:20,q:'Como se define uma lista em Python?',opts:['list = {}','list = ()','list = []','list = <>'],ans:2,exp:'Em Python, listas são definidas com colchetes []. As chaves {} são para dicionários e sets, e os parênteses () para tuplos.'},
+  {id:23,cat:'Python',diff:'medium',pts:150,time:20,q:'O que é um decorator em Python?',opts:['Uma função para formatar texto','Função que modifica outra função sem alterar o seu código-fonte','Um tipo de classe','Um método de importação'],ans:1,exp:'Decorators em Python são funções que envolvem outras funções, modificando ou estendendo o seu comportamento com @nome_decorator.'},
+  {id:24,cat:'Python',diff:'hard',pts:200,time:25,q:'O que é GIL (Global Interpreter Lock) no CPython?',opts:['Uma biblioteca de segurança','Mutex que permite apenas uma thread executar bytecode Python de cada vez','Um tipo de loop','Um método de optimização'],ans:1,exp:'O GIL é um mutex no CPython que previne múltiplas threads de executar bytecode simultaneamente, limitando a paralelização em CPU-bound tasks.'},
+
+  // IA
+  {id:25,cat:'Inteligência Artificial',diff:'easy',pts:100,time:20,q:'O que significa o acrónimo "IA"?',opts:['Iteração Avançada','Inteligência Artificial','Interface Automática','Integração de Aplicações'],ans:1,exp:'IA significa Inteligência Artificial, campo da ciência computacional que simula processos de inteligência humana por máquinas.'},
+  {id:26,cat:'Inteligência Artificial',diff:'medium',pts:150,time:20,q:'O que é Machine Learning?',opts:['Programação de robôs','Subconjunto da IA onde sistemas aprendem com dados sem serem explicitamente programados','Um sistema operativo','Uma linguagem de programação'],ans:1,exp:'Machine Learning é um subconjunto da IA onde algoritmos aprendem padrões a partir de dados, melhorando com experiência.'},
+  {id:27,cat:'Inteligência Artificial',diff:'hard',pts:200,time:25,q:'O que é "overfitting" em Machine Learning?',opts:['Quando o modelo é muito simples','Quando o modelo aprende demais o treino e generaliza mal','Quando os dados são insuficientes','Quando o modelo é rápido demais'],ans:1,exp:'Overfitting ocorre quando o modelo se ajusta demasiado aos dados de treino, memorizando-os em vez de aprender padrões generalizáveis.'},
+
+  // LINUX
+  {id:28,cat:'Linux',diff:'easy',pts:100,time:20,q:'Qual comando lista os ficheiros num diretório Linux?',opts:['dir','ls','list','show'],ans:1,exp:'O comando "ls" (list) é usado para listar o conteúdo de um diretório em sistemas Linux/Unix.'},
+  {id:29,cat:'Linux',diff:'medium',pts:150,time:20,q:'O que faz o comando "chmod 755 ficheiro"?',opts:['Apaga o ficheiro','Define permissões: dono lê/escreve/executa; grupo e outros lêem/executam','Cria um ficheiro novo','Copia o ficheiro'],ans:1,exp:'chmod 755 define: dono (7=rwx), grupo (5=r-x), outros (5=r-x). O número 7 = 4(r)+2(w)+1(x).'},
+  {id:30,cat:'Linux',diff:'hard',pts:200,time:25,q:'O que é um inode em sistemas de ficheiros Linux?',opts:['Um tipo de diretório','Estrutura de dados que armazena metadados de um ficheiro (exceto nome e dados)','Um bloco de armazenamento','Um tipo de permissão'],ans:1,exp:'Inode é uma estrutura de dados que contém metadados de um ficheiro: permissões, dono, timestamps, ponteiros para blocos de dados — tudo excepto o nome e o conteúdo.'},
+
+  // WEB
+  {id:31,cat:'Desenvolvimento Web',diff:'easy',pts:100,time:20,q:'O que significa HTML?',opts:['HyperText Machine Language','HyperText Markup Language','High Text Modeling Language','Hyper Transfer Markup Language'],ans:1,exp:'HTML significa HyperText Markup Language, a linguagem padrão para criar páginas web.'},
+  {id:32,cat:'Desenvolvimento Web',diff:'medium',pts:150,time:20,q:'O que é uma API REST?',opts:['Uma linguagem de programação','Interface de programação que usa HTTP e segue princípios de arquitetura REST','Um tipo de base de dados','Um framework JavaScript'],ans:1,exp:'REST (Representational State Transfer) é um estilo arquitetural para APIs web que usa HTTP, recursos identificados por URLs e operações CRUD.'},
+  {id:33,cat:'Desenvolvimento Web',diff:'hard',pts:200,time:25,q:'O que é CORS e quando ocorre um erro CORS?',opts:['Protocolo de encriptação web','Mecanismo que controla pedidos cross-origin; erros ocorrem quando o servidor não permite a origem do pedido','Um tipo de cookie','Uma técnica de compressão'],ans:1,exp:'CORS (Cross-Origin Resource Sharing) é um mecanismo de segurança. Erros ocorrem quando um script tenta aceder a recursos de uma origem diferente sem as permissões corretas.'},
+
+  // BASE DE DADOS
+  {id:34,cat:'Base de Dados',diff:'easy',pts:100,time:20,q:'O que é SQL?',opts:['Sistema de Questões Lógicas','Structured Query Language para gerir bases de dados relacionais','Super Quick Language','Sistema de Qualidade em Linux'],ans:1,exp:'SQL (Structured Query Language) é a linguagem padrão para criar, consultar e manipular bases de dados relacionais.'},
+  {id:35,cat:'Base de Dados',diff:'medium',pts:150,time:20,q:'O que é uma chave primária (Primary Key)?',opts:['A primeira coluna da tabela','Identificador único de cada registo numa tabela','Uma chave de encriptação','O campo mais importante da query'],ans:1,exp:'A Primary Key é um campo (ou conjunto de campos) que identifica de forma única cada registo numa tabela de base de dados relacional.'},
+
+  // HISTÓRIA
+  {id:36,cat:'História da Computação',diff:'easy',pts:100,time:20,q:'Quem é considerado o "pai da computação moderna"?',opts:['Bill Gates','Steve Jobs','Alan Turing','Linus Torvalds'],ans:2,exp:'Alan Turing é amplamente considerado o pai da computação moderna. Desenvolveu o conceito teórico da Máquina de Turing e o Teste de Turing.'},
+  {id:37,cat:'História da Computação',diff:'medium',pts:150,time:20,q:'Em que ano foi lançado o primeiro iPhone?',opts:['2005','2006','2007','2008'],ans:2,exp:'O primeiro iPhone foi apresentado por Steve Jobs a 9 de Janeiro de 2007 e lançado a 29 de Junho de 2007.'},
+  {id:38,cat:'História da Computação',diff:'hard',pts:200,time:25,q:'Qual foi o primeiro computador eletrónico digital de uso geral?',opts:['UNIVAC','ENIAC','IBM 360','Altair 8800'],ans:1,exp:'O ENIAC (Electronic Numerical Integrator and Computer), concluído em 1945, é considerado o primeiro computador eletrónico digital de uso geral.'},
+
+  // SISTEMAS OPERATIVOS
+  {id:39,cat:'Sistemas Operativos',diff:'medium',pts:150,time:20,q:'O que é um processo zombie em Linux?',opts:['Um processo que consome muita CPU','Processo terminado cujo estado não foi lido pelo processo pai','Um processo de vírus','Um processo em loop infinito'],ans:1,exp:'Processo zombie é um processo que terminou mas ainda tem uma entrada na tabela de processos porque o pai não leu o seu estado de saída com wait().'},
+  {id:40,cat:'Sistemas Operativos',diff:'hard',pts:200,time:25,q:'O que é paginação (paging) em sistemas operativos?',opts:['Gestão de ficheiros em disco','Técnica de gestão de memória que divide memória em páginas de tamanho fixo','Um tipo de sistema de ficheiros','Gestão de permissões de utilizador'],ans:1,exp:'Paginação divide a memória virtual e física em páginas de tamanho fixo, eliminando fragmentação externa e permitindo que processos usem memória não-contígua.'},
+];
+
+// ──────────────────────────────────────
+// CATEGORIES
+// ──────────────────────────────────────
+const CATEGORIES = [
+  {name:'Hardware',emoji:'💻'},
+  {name:'Software',emoji:'📦'},
+  {name:'Redes',emoji:'🌐'},
+  {name:'Programação',emoji:'👨‍💻'},
+  {name:'Cibersegurança',emoji:'🔒'},
+  {name:'JavaScript',emoji:'🟡'},
+  {name:'Python',emoji:'🐍'},
+  {name:'Inteligência Artificial',emoji:'🤖'},
+  {name:'Linux',emoji:'🐧'},
+  {name:'Desenvolvimento Web',emoji:'🕸️'},
+  {name:'Base de Dados',emoji:'🗄️'},
+  {name:'História da Computação',emoji:'📜'},
+  {name:'Sistemas Operativos',emoji:'⚙️'},
+];
+
+// ──────────────────────────────────────
+// STATE
+// ──────────────────────────────────────
+let STATE = {
+  mode: 'classic',
+  difficulty: 'all',
+  count: 10,
+  timePerQ: 20,
+  selectedCats: [],
+
+  // game runtime
+  questions: [],
+  currentIdx: 0,
+  score: 0,
+  streak: 0,
+  maxStreak: 0,
+  combo: 1,
+  lives: 3,
+  answered: false,
+  timerVal: 0,
+  timerInterval: null,
+  answerTimes: [],
+  questionStart: 0,
+  history: [],
+  totalXP: 0,
+};
+
+// ──────────────────────────────────────
+// INIT
+// ──────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  buildCatGrid();
+  updateLobbyTime();
+  updateLobbySum();
+  initBgCanvas();
+
+  setTimeout(() => {
+    const loader = document.getElementById('loader');
+    loader.classList.add('hidden');
+    setTimeout(() => loader.style.display='none', 400);
+    showScreen('lobby-screen');
+  }, 900);
+});
+
+// ──────────────────────────────────────
+// SCREENS
+// ──────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ──────────────────────────────────────
+// LOBBY
+// ──────────────────────────────────────
+function buildCatGrid() {
+  const grid = document.getElementById('cat-grid');
+  grid.innerHTML = CATEGORIES.map(c => `
+    <div class="cat-chip" data-cat="${c.name}" onclick="toggleCat(this,'${c.name}')">
+      <span class="cat-emoji">${c.emoji}</span>${c.name}
+    </div>
+  `).join('');
+}
+
+function toggleCat(el, name) {
+  el.classList.toggle('selected');
+  const idx = STATE.selectedCats.indexOf(name);
+  if (idx === -1) STATE.selectedCats.push(name);
+  else STATE.selectedCats.splice(idx, 1);
+}
+
+function selectMode(el) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  STATE.mode = el.dataset.mode;
+
+  // auto-config by mode
+  if (STATE.mode === 'speed') {
+    document.getElementById('cfg-time').value = '5';
+    STATE.timePerQ = 5;
+  } else if (STATE.mode === 'marathon') {
+    document.getElementById('cfg-count').value = '20';
+    STATE.count = 20;
+  }
+  updateLobbySum();
+}
+
+function updateLobbyTime() {
+  const el = document.getElementById('lobby-time');
+  if (!el) return;
+  const now = new Date();
+  el.textContent = now.toLocaleTimeString('pt', {hour:'2-digit',minute:'2-digit'});
+  setTimeout(updateLobbyTime, 10000);
+}
+
+function updateLobbySum() {
+  const modeNames = {classic:'Clássico',speed:'Modo Rápido',survival:'Sobrevivência',marathon:'Maratona'};
+  STATE.count = parseInt(document.getElementById('cfg-count').value);
+  STATE.timePerQ = parseInt(document.getElementById('cfg-time').value);
+  STATE.difficulty = document.getElementById('cfg-difficulty').value;
+
+  document.getElementById('sum-mode').textContent = modeNames[STATE.mode] || 'Clássico';
+  document.getElementById('sum-count').textContent = STATE.count + ' perguntas';
+  document.getElementById('sum-time').textContent = STATE.timePerQ + 's / pergunta';
+}
+
+// Add event listeners to update summary on change
+['cfg-count','cfg-time','cfg-difficulty'].forEach(id => {
+  document.getElementById(id)?.addEventListener('change', updateLobbySum);
+});
+
+// ──────────────────────────────────────
+// GAME START
+// ──────────────────────────────────────
+function startQuiz() {
+  updateLobbySum();
+
+  // Filter questions
+  let pool = [...QUESTIONS];
+  if (STATE.difficulty !== 'all') pool = pool.filter(q => q.diff === STATE.difficulty);
+  if (STATE.selectedCats.length > 0) pool = pool.filter(q => STATE.selectedCats.includes(q.cat));
+
+  if (pool.length === 0) {
+    showToast('⚠️ Sem perguntas para os filtros selecionados!', 'error');
+    return;
+  }
+
+  // Shuffle & slice
+  shuffle(pool);
+  STATE.questions = pool.slice(0, Math.min(STATE.count, pool.length));
+
+  // Reset state
+  STATE.currentIdx = 0;
+  STATE.score = 0;
+  STATE.streak = 0;
+  STATE.maxStreak = 0;
+  STATE.combo = 1;
+  STATE.lives = STATE.mode === 'survival' ? 3 : 0;
+  STATE.history = [];
+  STATE.totalXP = 0;
+  STATE.answerTimes = [];
+
+  // Setup lives
+  updateLives();
+
+  showScreen('game-screen');
+  setTimeout(() => loadQuestion(), 100);
+
+  showToast('🎯 Quiz iniciado! Boa sorte!', 'info');
+}
+
+// ──────────────────────────────────────
+// LOAD QUESTION
+// ──────────────────────────────────────
+function loadQuestion() {
+  const q = STATE.questions[STATE.currentIdx];
+  if (!q) { endQuiz(); return; }
+
+  STATE.answered = false;
+  STATE.questionStart = Date.now();
+
+  // Progress
+  const pct = (STATE.currentIdx / STATE.questions.length) * 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+
+  // HUD
+  document.getElementById('hud-qnum').textContent = `${STATE.currentIdx+1}/${STATE.questions.length}`;
+  document.getElementById('hud-score').textContent = STATE.score.toLocaleString();
+  updateStreakHUD();
+
+  // Animate card in
+  const card = document.getElementById('question-card');
+  card.style.animation = 'none';
+  card.offsetHeight; // reflow
+  card.style.animation = 'qSlideIn .45s cubic-bezier(.4,0,.2,1) both';
+
+  // Question meta
+  document.getElementById('q-num').textContent = `Pergunta ${STATE.currentIdx+1} de ${STATE.questions.length}`;
+  document.getElementById('q-cat').textContent = q.cat;
+
+  const diffEl = document.getElementById('q-diff');
+  diffEl.textContent = {easy:'Fácil',medium:'Médio',hard:'Difícil'}[q.diff];
+  diffEl.className = 'q-diff ' + q.diff;
+
+  document.getElementById('q-pts').textContent = `+${q.pts * STATE.combo} pts`;
+
+  // Typing effect for question
+  typeText(document.getElementById('q-text'), q.q, 30);
+
+  // Build options
+  const optContainer = document.getElementById('options');
+  const letters = ['A','B','C','D'];
+  optContainer.innerHTML = q.opts.map((opt, i) => `
+    <button class="opt-btn" onclick="selectAnswer(${i})" data-idx="${i}">
+      <span class="opt-letter">${letters[i]}</span>
+      <span class="opt-text">${opt}</span>
+      <span class="opt-icon">${i === q.ans ? '✓' : '✗'}</span>
+    </button>
+  `).join('');
+
+  // Hide explain and next
+  document.getElementById('explain-box').classList.remove('show');
+  document.getElementById('btn-next').classList.remove('show');
+  document.getElementById('btn-next-label').textContent =
+    STATE.currentIdx + 1 < STATE.questions.length ? 'Próxima pergunta' : 'Ver resultados';
+
+  // Start timer
+  startTimer(q.time || STATE.timePerQ);
+}
+
+// ──────────────────────────────────────
+// TYPING EFFECT
+// ──────────────────────────────────────
+function typeText(el, text, speed=25) {
+  el.textContent = '';
+  let i = 0;
+  const interval = setInterval(() => {
+    el.textContent += text[i];
+    i++;
+    if (i >= text.length) clearInterval(interval);
+  }, speed);
+}
+
+// ──────────────────────────────────────
+// TIMER
+// ──────────────────────────────────────
+const TIMER_CIRC = 2 * Math.PI * 35; // ~220
+
+function startTimer(seconds) {
+  clearInterval(STATE.timerInterval);
+  STATE.timerVal = seconds;
+
+  const display = document.getElementById('timer-display');
+  const arc = document.getElementById('timer-arc');
+  const numEl = document.querySelector('.timer-num');
+
+  arc.style.stroke = 'var(--accent)';
+  numEl.style.color = 'var(--accent)';
+
+  function tick() {
+    const pct = STATE.timerVal / seconds;
+    arc.style.strokeDashoffset = TIMER_CIRC * (1 - pct);
+    display.textContent = STATE.timerVal;
+
+    if (STATE.timerVal <= 5) {
+      arc.style.stroke = 'var(--danger)';
+      numEl.style.color = 'var(--danger)';
+    } else if (STATE.timerVal <= 10) {
+      arc.style.stroke = 'var(--warn)';
+      numEl.style.color = 'var(--warn)';
+    }
+
+    if (STATE.timerVal <= 0) {
+      clearInterval(STATE.timerInterval);
+      if (!STATE.answered) timeOut();
+    }
+    STATE.timerVal--;
+  }
+
+  tick();
+  STATE.timerInterval = setInterval(tick, 1000);
+}
+
+function timeOut() {
+  if (STATE.answered) return;
+  STATE.answered = true;
+  clearInterval(STATE.timerInterval);
+
+  const q = STATE.questions[STATE.currentIdx];
+  // Show correct answer
+  const btns = document.querySelectorAll('.opt-btn');
+  btns.forEach(b => b.disabled = true);
+  btns[q.ans].classList.add('correct');
+
+  // Handle streak/lives
+  STATE.streak = 0;
+  STATE.combo = 1;
+  updateStreakHUD();
+
+  if (STATE.mode === 'survival') {
+    STATE.lives = Math.max(0, STATE.lives - 1);
+    updateLives();
+    if (STATE.lives === 0) {
+      showToast('💀 Ficaste sem vidas!', 'error');
+      setTimeout(() => endQuiz(), 1200);
+      return;
+    }
+  }
+
+  // Record
+  const elapsed = ((Date.now() - STATE.questionStart) / 1000).toFixed(1);
+  STATE.answerTimes.push(parseFloat(elapsed));
+  STATE.history.push({q: q.q, correct: false, time: elapsed});
+
+  // Show explain + next
+  document.getElementById('explain-text').textContent = q.exp;
+  document.getElementById('explain-box').classList.add('show');
+  document.getElementById('btn-next').classList.add('show');
+
+  showToast('⏱️ Tempo esgotado!', 'error');
+}
+
+// ──────────────────────────────────────
+// SELECT ANSWER
+// ──────────────────────────────────────
+function selectAnswer(idx) {
+  if (STATE.answered) return;
+  STATE.answered = true;
+  clearInterval(STATE.timerInterval);
+
+  const q = STATE.questions[STATE.currentIdx];
+  const elapsed = ((Date.now() - STATE.questionStart) / 1000).toFixed(1);
+  STATE.answerTimes.push(parseFloat(elapsed));
+
+  const btns = document.querySelectorAll('.opt-btn');
+  btns.forEach(b => b.disabled = true);
+
+  const isCorrect = idx === q.ans;
+
+  if (isCorrect) {
+    btns[idx].classList.add('correct');
+
+    // Score with combo
+    const pts = q.pts * STATE.combo;
+    STATE.score += pts;
+    STATE.totalXP += pts;
+    STATE.streak++;
+    STATE.maxStreak = Math.max(STATE.maxStreak, STATE.streak);
+
+    // Combo logic
+    if (STATE.streak > 0 && STATE.streak % 3 === 0) {
+      STATE.combo = Math.min(STATE.combo + 1, 5);
+      showComboPop();
+    }
+
+    showParticles(event?.clientX || window.innerWidth/2, event?.clientY || window.innerHeight/2);
+    showToast(`✅ Correto! +${pts} pontos`, 'success');
+
+    if (STATE.streak >= 5) showToast(`🔥 ${STATE.streak} seguidas! Incrível!`, 'info');
+
+    document.getElementById('hud-score').textContent = STATE.score.toLocaleString();
+
+  } else {
+    btns[idx].classList.add('wrong');
+    btns[q.ans].classList.add('correct');
+
+    STATE.streak = 0;
+    STATE.combo = 1;
+
+    if (STATE.mode === 'survival') {
+      STATE.lives = Math.max(0, STATE.lives - 1);
+      updateLives();
+      if (STATE.lives === 0) {
+        showToast('💀 Ficaste sem vidas!', 'error');
+        document.getElementById('explain-text').textContent = q.exp;
+        document.getElementById('explain-box').classList.add('show');
+        setTimeout(() => endQuiz(), 2500);
+        return;
+      }
+    }
+
+    showToast('❌ Resposta errada!', 'error');
+  }
+
+  // Update combo HUD
+  const comboEl = document.getElementById('hud-combo');
+  if (STATE.combo > 1) {
+    comboEl.style.display = 'flex';
+    document.getElementById('combo-num').textContent = `×${STATE.combo}`;
+  } else {
+    comboEl.style.display = 'none';
+  }
+
+  updateStreakHUD();
+
+  // Record history
+  STATE.history.push({q: q.q, correct: isCorrect, time: elapsed});
+
+  // Show explain
+  document.getElementById('explain-text').textContent = q.exp;
+  document.getElementById('explain-box').classList.add('show');
+  document.getElementById('btn-next').classList.add('show');
+}
+
+// ──────────────────────────────────────
+// NEXT QUESTION
+// ──────────────────────────────────────
+function nextQuestion() {
+  STATE.currentIdx++;
+  if (STATE.currentIdx >= STATE.questions.length) {
+    endQuiz();
+  } else {
+    loadQuestion();
+  }
+}
+
+// ──────────────────────────────────────
+// QUIT
+// ──────────────────────────────────────
+function quitGame() {
+  clearInterval(STATE.timerInterval);
+  if (STATE.currentIdx > 0) {
+    endQuiz();
+  } else {
+    showScreen('lobby-screen');
+  }
+}
+
+// ──────────────────────────────────────
+// END QUIZ
+// ──────────────────────────────────────
+function endQuiz() {
+  clearInterval(STATE.timerInterval);
+
+  const total = STATE.questions.length;
+  const correct = STATE.history.filter(h => h.correct).length;
+  const wrong = total - correct;
+  const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
+  const avgTime = STATE.answerTimes.length > 0
+    ? (STATE.answerTimes.reduce((a,b)=>a+b,0) / STATE.answerTimes.length).toFixed(1)
+    : 0;
+
+  // Grade
+  let emoji, grade, message;
+  if (pct >= 90)      { emoji='🏆'; grade='LENDÁRIO'; message='Perfeito absoluto! És um génio da informática!'; }
+  else if (pct >= 80) { emoji='🥇'; grade='EXCELENTE'; message='Desempenho incrível! Dominas bem o tema!'; }
+  else if (pct >= 70) { emoji='🥈'; grade='MUITO BOM'; message='Ótimo resultado! Continua a estudar!'; }
+  else if (pct >= 60) { emoji='🥉'; grade='BOM'; message='Bom esforço! Ainda há margem para melhorar.'; }
+  else if (pct >= 40) { emoji='📚'; grade='A MELHORAR'; message='Não desistas! A prática leva à perfeição.'; }
+  else                { emoji='💪'; grade='CONTINUA'; message='Desafio aceite! Estuda e volta mais forte!'; }
+
+  document.getElementById('result-emoji').textContent = emoji;
+  document.getElementById('result-grade').textContent = grade;
+  document.getElementById('result-message').textContent = message;
+
+  // Stats
+  animateCount(document.getElementById('rs-correct'), 0, correct, 800);
+  animateCount(document.getElementById('rs-wrong'), 0, wrong, 800);
+  document.getElementById('rs-time').textContent = avgTime + 's';
+  animateCount(document.getElementById('rs-streak'), 0, STATE.maxStreak, 800);
+  animateCount(document.getElementById('rs-pts'), 0, STATE.score, 1200);
+
+  // Score arc
+  setTimeout(() => {
+    const arcLen = 2 * Math.PI * 60; // ~376
+    const arc = document.getElementById('score-arc');
+    arc.style.strokeDashoffset = arcLen * (1 - pct/100);
+    animateCount(document.getElementById('score-pct'), 0, pct, 1500, '%');
+  }, 300);
+
+  // XP
+  const xpGained = STATE.totalXP;
+  document.getElementById('xp-gain-val').textContent = `+${xpGained} XP`;
+  setTimeout(() => {
+    document.getElementById('xp-bar-fill').style.width = Math.min(pct, 100) + '%';
+  }, 600);
+
+  // Level from storage
+  const userData = JSON.parse(localStorage.getItem('techquiz_user') || '{}');
+  userData.xp = (userData.xp || 0) + xpGained;
+  userData.level = Math.floor(userData.xp / 500) + 1;
+  userData.totalGames = (userData.totalGames || 0) + 1;
+  userData.totalScore = (userData.totalScore || 0) + STATE.score;
+  if (!userData.gameHistory) userData.gameHistory = [];
+  userData.gameHistory.unshift({
+    date: new Date().toISOString(), score: STATE.score, pct, mode: STATE.mode,
+    questions: total, correct, time: avgTime
+  });
+  if (userData.gameHistory.length > 20) userData.gameHistory = userData.gameHistory.slice(0,20);
+  localStorage.setItem('techquiz_user', JSON.stringify(userData));
+
+  document.getElementById('xp-level').textContent = userData.level;
+
+  // Achievements
+  checkAchievements(pct, correct, STATE.maxStreak, total);
+
+  // History list
+  buildHistoryList();
+
+  showScreen('result-screen');
+
+  if (pct >= 80) {
+    setTimeout(() => launchConfetti(), 400);
+  }
+}
+
+// ──────────────────────────────────────
+// ACHIEVEMENTS
+// ──────────────────────────────────────
+function checkAchievements(pct, correct, maxStreak, total) {
+  const achs = [];
+  if (pct === 100) achs.push({icon:'🏆',name:'Perfeição Total',desc:'100% de respostas corretas!',badge:'LENDÁRIO'});
+  if (pct >= 90)  achs.push({icon:'⭐',name:'Quase Perfeito',desc:'90%+ de acertos - incrível!',badge:'EXCELENTE'});
+  if (maxStreak >= 5) achs.push({icon:'🔥',name:'Em Chamas',desc:'5+ respostas seguidas certas!',badge:'STREAK'});
+  if (maxStreak >= 10) achs.push({icon:'🌋',name:'Imbatível',desc:'10+ respostas seguidas!',badge:'ÉPICO'});
+  if (STATE.combo >= 3) achs.push({icon:'⚡',name:'Combo Mestre',desc:'Atingiste ×3 combo!',badge:'COMBO'});
+  if (total >= 15) achs.push({icon:'🏃',name:'Maratonista',desc:'Completaste 15+ perguntas!',badge:'RESISTÊNCIA'});
+
+  const card = document.getElementById('achievements-card');
+  const list = document.getElementById('ach-list');
+  if (achs.length > 0) {
+    card.style.display = 'block';
+    list.innerHTML = achs.map(a => `
+      <div class="ach-item">
+        <span class="ach-icon">${a.icon}</span>
+        <div class="ach-info">
+          <div class="ach-name">${a.name}</div>
+          <div class="ach-desc">${a.desc}</div>
+        </div>
+        <span class="ach-badge">${a.badge}</span>
+      </div>
+    `).join('');
+  } else {
+    card.style.display = 'none';
+  }
+}
+
+// ──────────────────────────────────────
+// HISTORY LIST
+// ──────────────────────────────────────
+function buildHistoryList() {
+  const list = document.getElementById('history-list');
+  list.innerHTML = STATE.history.map((h, i) => `
+    <div class="hist-row">
+      <span class="hist-idx">${i+1}</span>
+      <span class="hist-q">${h.q}</span>
+      <span class="hist-outcome">${h.correct ? '✅' : '❌'}</span>
+      <span class="hist-time">${h.time}s</span>
+    </div>
+  `).join('');
+}
+
+// ──────────────────────────────────────
+// PLAY AGAIN
+// ──────────────────────────────────────
+function playAgain() {
+  showScreen('lobby-screen');
+  showToast('🎯 Configura um novo quiz!', 'info');
+}
+
+// ──────────────────────────────────────
+// UI HELPERS
+// ──────────────────────────────────────
+function updateStreakHUD() {
+  const badge = document.getElementById('hud-streak');
+  document.getElementById('streak-num').textContent = STATE.streak;
+  if (STATE.streak >= 3) {
+    badge.classList.add('active');
+  } else {
+    badge.classList.remove('active');
+  }
+}
+
+function updateLives() {
+  const el = document.getElementById('hud-lives');
+  if (STATE.mode !== 'survival') { el.innerHTML = ''; return; }
+  const max = 3;
+  el.innerHTML = Array.from({length:max}, (_,i) => `
+    <span class="life ${i >= STATE.lives ? 'lost' : ''}">❤️</span>
+  `).join('');
+}
+
+// ──────────────────────────────────────
+// PARTICLES
+// ──────────────────────────────────────
+function showParticles(x, y) {
+  const colors = ['#00e5ff','#7b2fff','#ffd84d','#00e099','#ff4f7b'];
+  for (let i = 0; i < 14; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = 4 + Math.random() * 6;
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 60 + Math.random() * 80;
+    p.style.cssText = `
+      left:${x}px;top:${y}px;
+      width:${size}px;height:${size}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      --tx:${Math.cos(angle)*dist}px;
+      --ty:${Math.sin(angle)*dist}px;
+    `;
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 1200);
+  }
+}
+
+// ──────────────────────────────────────
+// CONFETTI (result)
+// ──────────────────────────────────────
+function launchConfetti() {
+  const colors = ['#00e5ff','#7b2fff','#ffd84d','#00e099','#ff4f7b','#ff8c42'];
+  for (let i = 0; i < 60; i++) {
+    setTimeout(() => {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.style.cssText = `
+        left:${20 + Math.random()*60}%;top:-10px;
+        width:${5+Math.random()*8}px;height:${5+Math.random()*8}px;
+        background:${colors[Math.floor(Math.random()*colors.length)]};
+        border-radius:${Math.random()>.5?'50%':'2px'};
+        --tx:${(Math.random()-.5)*200}px;
+        --ty:${200+Math.random()*300}px;
+        animation-duration:${1+Math.random()}s;
+      `;
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 2000);
+    }, i * 40);
+  }
+}
+
+// ──────────────────────────────────────
+// COMBO POPUP
+// ──────────────────────────────────────
+function showComboPop() {
+  const pop = document.createElement('div');
+  pop.className = 'combo-pop';
+  pop.innerHTML = `<div class="combo-label">×${STATE.combo}</div><div class="combo-sub">COMBO!</div>`;
+  document.body.appendChild(pop);
+  setTimeout(() => pop.remove(), 900);
+}
+
+// ──────────────────────────────────────
+// TOAST
+// ──────────────────────────────────────
+function showToast(msg, type='info') {
+  const icons = {success:'✅',error:'❌',info:'💡'};
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span class="toast-icon">${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('out');
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// ──────────────────────────────────────
+// ANIMATE COUNT
+// ──────────────────────────────────────
+function animateCount(el, from, to, duration=800, suffix='') {
+  const start = performance.now();
+  function update(now) {
+    const progress = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.round(from + (to - from) * eased) + suffix;
+    if (progress < 1) requestAnimationFrame(update);
+  }
+  requestAnimationFrame(update);
+}
+
+// ──────────────────────────────────────
+// BG CANVAS (dots grid)
+// ──────────────────────────────────────
+function initBgCanvas() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, dots = [], mouse = {x:-999,y:-999};
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    dots = [];
+    const spacing = 50;
+    for (let x = 0; x < W; x += spacing)
+      for (let y = 0; y < H; y += spacing)
+        dots.push({x, y, ox:x, oy:y, vx:0, vy:0});
+  }
+
+  window.addEventListener('resize', resize);
+  window.addEventListener('mousemove', e => { mouse.x=e.clientX; mouse.y=e.clientY; });
+  resize();
+
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+    dots.forEach(d => {
+      const dx = d.x - mouse.x, dy = d.y - mouse.y;
+      const dist = Math.sqrt(dx*dx+dy*dy);
+      const force = Math.max(0, 80 - dist) / 80;
+      d.vx += (dx/dist||0) * force * 2;
+      d.vy += (dy/dist||0) * force * 2;
+      d.vx += (d.ox - d.x) * 0.05;
+      d.vy += (d.oy - d.y) * 0.05;
+      d.vx *= 0.85; d.vy *= 0.85;
+      d.x += d.vx; d.y += d.vy;
+      const alpha = 0.06 + force * 0.15;
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, 1.5, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(0,229,255,${alpha})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ──────────────────────────────────────
+// UTILS
+// ──────────────────────────────────────
+function shuffle(arr) {
+  for (let i = arr.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i+1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+</script>
+</body>
+</html>
