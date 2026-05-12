@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TechQuiz Arena</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── RESET & BASE ─────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #080b10;
+      --surface:   #0d1117;
+      --panel:     #111820;
+      --border:    rgba(255,255,255,0.07);
+      --accent:    #00e5ff;
+      --accent2:   #7b2fff;
+      --accent3:   #ff4f7b;
+      --gold:      #ffd84d;
+      --text:      #e8edf5;
+      --muted:     #5a6a7e;
+      --success:   #00e099;
+      --danger:    #ff4f7b;
+      --font-head: 'Syne', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+      --font-body: 'Outfit', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* ─── CANVAS BACKGROUND ────────────────────────── */
+    #bg-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ─── NOISE OVERLAY ────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.025;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* ─── NAV ──────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 48px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: rgba(8,11,16,0.75);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      box-shadow: 0 0 20px rgba(0,229,255,0.35);
+    }
+
+    .logo-text {
+      font-family: var(--font-head);
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-family: var(--font-body);
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 7px 16px;
+      border-radius: 8px;
+      letter-spacing: 0.2px;
+      transition: color .2s, background .2s;
+    }
+
+    .nav-links a:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+
+    .nav-cta {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 13.5px;
+      padding: 9px 22px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all .25s;
+      letter-spacing: 0.2px;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.2); color: var(--text); background: rgba(255,255,255,0.04); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #000;
+      box-shadow: 0 0 24px rgba(0,229,255,0.25);
+    }
+    .btn-primary:hover {
+      box-shadow: 0 0 36px rgba(0,229,255,0.45);
+      transform: translateY(-1px);
+    }
+
+    .btn-accent2 {
+      background: linear-gradient(135deg, var(--accent2), var(--accent3));
+      color: #fff;
+      box-shadow: 0 0 24px rgba(123,47,255,0.3);
+    }
+    .btn-accent2:hover {
+      box-shadow: 0 0 36px rgba(123,47,255,0.5);
+      transform: translateY(-1px);
+    }
+
+    .btn-lg {
+      font-size: 15px;
+      padding: 14px 32px;
+      border-radius: 12px;
+    }
+
+    /* ─── HERO ─────────────────────────────────────── */
+    .hero {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 140px 24px 80px;
+      gap: 32px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0,229,255,0.08);
+      border: 1px solid rgba(0,229,255,0.2);
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 6px 16px;
+      border-radius: 100px;
+      letter-spacing: 1px;
+      animation: fadeSlideDown .8s ease both;
+    }
+
+    .badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:.5; transform:scale(.8); }
+    }
+
+    .hero-title {
+      font-family: var(--font-head);
+      font-size: clamp(48px, 9vw, 100px);
+      font-weight: 800;
+      line-height: .95;
+      letter-spacing: -3px;
+      animation: fadeSlideDown .8s .1s ease both;
+    }
+
+    .hero-title .line1 { display: block; color: var(--text); }
+    .hero-title .line2 {
+      display: block;
+      background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 50%, var(--accent3) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      background-size: 200% auto;
+      animation: gradShift 4s linear infinite, fadeSlideDown .8s .15s ease both;
+    }
+
+    @keyframes gradShift {
+      0%   { background-position: 0% }
+      100% { background-position: 200% }
+    }
+
+    .hero-sub {
+      max-width: 560px;
+      font-size: clamp(15px, 2vw, 17px);
+      font-weight: 400;
+      color: var(--muted);
+      line-height: 1.7;
+      animation: fadeSlideDown .8s .2s ease both;
+    }
+
+    .hero-sub span { color: var(--text); }
+
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+      animation: fadeSlideDown .8s .3s ease both;
+    }
+
+    /* ─── STATS ROW ────────────────────────────────── */
+    .stats-row {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+      justify-content: center;
+      animation: fadeSlideDown .8s .4s ease both;
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .stat-value {
+      font-family: var(--font-head);
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      letter-spacing: 0.8px;
+    }
+
+    .stat-divider {
+      width: 1px;
+      height: 40px;
+      background: var(--border);
+      align-self: center;
+    }
+
+    /* ─── SECTION ──────────────────────────────────── */
+    section {
+      position: relative;
+      z-index: 2;
+      padding: 100px 24px;
+    }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-family: var(--font-head);
+      font-size: clamp(28px, 5vw, 48px);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1.05;
+      margin-bottom: 20px;
+    }
+
+    .section-sub {
+      font-size: 15px;
+      color: var(--muted);
+      max-width: 520px;
+      line-height: 1.7;
+      margin-bottom: 56px;
+    }
+
+    .container {
+      max-width: 1160px;
+      margin: 0 auto;
+    }
+
+    /* ─── CATEGORIES GRID ──────────────────────────── */
+    .categories-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px;
+    }
+
+    .cat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px 20px;
+      cursor: pointer;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      transition: all .3s cubic-bezier(.34,1.56,.64,1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cat-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity .3s;
+    }
+
+    .cat-card:hover {
+      transform: translateY(-4px) scale(1.01);
+      border-color: rgba(255,255,255,0.15);
+    }
+    .cat-card:hover::before { opacity: 1; }
+
+    .cat-card[data-color="cyan"]   { --c: var(--accent); }
+    .cat-card[data-color="purple"] { --c: var(--accent2); }
+    .cat-card[data-color="pink"]   { --c: var(--accent3); }
+    .cat-card[data-color="gold"]   { --c: var(--gold); }
+    .cat-card[data-color="green"]  { --c: var(--success); }
+    .cat-card[data-color="orange"] { --c: #ff8c42; }
+    .cat-card[data-color="blue"]   { --c: #4f9dff; }
+    .cat-card[data-color="red"]    { --c: #ff5555; }
+
+    .cat-card:hover { box-shadow: 0 8px 40px rgba(0,0,0,.4), 0 0 0 1px var(--c, var(--accent)); border-color: var(--c, var(--accent)); }
+
+    .cat-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.06);
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: all .3s;
+    }
+
+    .cat-card:hover .cat-icon {
+      background: rgba(255,255,255,0.1);
+      box-shadow: 0 0 20px var(--c, var(--accent));
+      border-color: var(--c, var(--accent));
+    }
+
+    .cat-name {
+      font-family: var(--font-head);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+
+    .cat-count {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.5px;
+    }
+
+    .cat-arrow {
+      font-size: 18px;
+      color: var(--muted);
+      margin-left: auto;
+      align-self: flex-end;
+      transition: transform .3s, color .3s;
+    }
+
+    .cat-card:hover .cat-arrow { color: var(--c, var(--accent)); transform: translateX(3px); }
+
+    /* ─── FEATURES ─────────────────────────────────── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2px;
+      background: var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .feat-card {
+      background: var(--surface);
+      padding: 36px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      transition: background .25s;
+    }
+
+    .feat-card:hover { background: var(--panel); }
+
+    .feat-icon-wrap {
+      width: 48px; height: 48px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+      margin-bottom: 4px;
+    }
+
+    .feat-icon-wrap.cyan   { background: rgba(0,229,255,0.1); box-shadow: 0 0 20px rgba(0,229,255,0.15); }
+    .feat-icon-wrap.purple { background: rgba(123,47,255,0.1); box-shadow: 0 0 20px rgba(123,47,255,0.15); }
+    .feat-icon-wrap.pink   { background: rgba(255,79,123,0.1); box-shadow: 0 0 20px rgba(255,79,123,0.15); }
+    .feat-icon-wrap.gold   { background: rgba(255,216,77,0.1); box-shadow: 0 0 20px rgba(255,216,77,0.15); }
+    .feat-icon-wrap.green  { background: rgba(0,224,153,0.1); box-shadow: 0 0 20px rgba(0,224,153,0.15); }
+    .feat-icon-wrap.blue   { background: rgba(79,157,255,0.1); box-shadow: 0 0 20px rgba(79,157,255,0.15); }
+
+    .feat-title {
+      font-family: var(--font-head);
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -.3px;
+    }
+
+    .feat-desc {
+      font-size: 13.5px;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    /* ─── MODES ────────────────────────────────────── */
+    .modes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .mode-card {
+      border-radius: 20px;
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      position: relative;
+      overflow: hidden;
+      transition: transform .3s cubic-bezier(.34,1.56,.64,1), box-shadow .3s;
+    }
+
+    .mode-card:hover { transform: translateY(-4px) scale(1.01); }
+
+    .mode-card.classic {
+      background: linear-gradient(145deg, #0d1a2a, #0d1117);
+      border: 1px solid rgba(0,229,255,.2);
+      box-shadow: inset 0 1px 0 rgba(0,229,255,.1);
+    }
+    .mode-card.classic:hover { box-shadow: 0 20px 60px rgba(0,229,255,.15), inset 0 1px 0 rgba(0,229,255,.15); }
+
+    .mode-card.survival {
+      background: linear-gradient(145deg, #1a0d1a, #0d1117);
+      border: 1px solid rgba(255,79,123,.2);
+      box-shadow: inset 0 1px 0 rgba(255,79,123,.1);
+    }
+    .mode-card.survival:hover { box-shadow: 0 20px 60px rgba(255,79,123,.15), inset 0 1px 0 rgba(255,79,123,.15); }
+
+    .mode-card.speed {
+      background: linear-gradient(145deg, #0d0d1a, #0d1117);
+      border: 1px solid rgba(123,47,255,.2);
+      box-shadow: inset 0 1px 0 rgba(123,47,255,.1);
+    }
+    .mode-card.speed:hover { box-shadow: 0 20px 60px rgba(123,47,255,.15), inset 0 1px 0 rgba(123,47,255,.15); }
+
+    .mode-card.daily {
+      background: linear-gradient(145deg, #1a1500, #0d1117);
+      border: 1px solid rgba(255,216,77,.2);
+      box-shadow: inset 0 1px 0 rgba(255,216,77,.1);
+    }
+    .mode-card.daily:hover { box-shadow: 0 20px 60px rgba(255,216,77,.15), inset 0 1px 0 rgba(255,216,77,.15); }
+
+    .mode-emoji {
+      font-size: 36px;
+      margin-bottom: 4px;
+    }
+
+    .mode-name {
+      font-family: var(--font-head);
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -.5px;
+    }
+
+    .mode-card.classic .mode-name { color: var(--accent); }
+    .mode-card.survival .mode-name { color: var(--accent3); }
+    .mode-card.speed .mode-name    { color: var(--accent2); }
+    .mode-card.daily .mode-name    { color: var(--gold); }
+
+    .mode-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .mode-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 1px;
+      padding: 4px 10px;
+      border-radius: 100px;
+      margin-top: 6px;
+      border: 1px solid;
+      width: fit-content;
+    }
+
+    .mode-card.classic .mode-tag { color: var(--accent); border-color: rgba(0,229,255,.25); background: rgba(0,229,255,.07); }
+    .mode-card.survival .mode-tag { color: var(--accent3); border-color: rgba(255,79,123,.25); background: rgba(255,79,123,.07); }
+    .mode-card.speed .mode-tag { color: var(--accent2); border-color: rgba(123,47,255,.25); background: rgba(123,47,255,.07); }
+    .mode-card.daily .mode-tag { color: var(--gold); border-color: rgba(255,216,77,.25); background: rgba(255,216,77,.07); }
+
+    /* ─── LEADERBOARD PREVIEW ──────────────────────── */
+    .leaderboard-preview {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .lb-header {
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .lb-title {
+      font-family: var(--font-head);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -.3px;
+    }
+
+    .lb-live {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--success);
+      letter-spacing: 0.8px;
+    }
+
+    .lb-live-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    .lb-row {
+      display: flex;
+      align-items: center;
+      padding: 16px 28px;
+      gap: 16px;
+      border-bottom: 1px solid var(--border);
+      transition: background .2s;
+    }
+    .lb-row:last-child { border-bottom: none; }
+    .lb-row:hover { background: rgba(255,255,255,0.03); }
+
+    .lb-rank {
+      font-family: var(--font-head);
+      font-size: 18px;
+      font-weight: 800;
+      width: 36px;
+      text-align: center;
+    }
+
+    .lb-rank.top1 { color: var(--gold); }
+    .lb-rank.top2 { color: #c0c0c0; }
+    .lb-rank.top3 { color: #cd7f32; }
+    .lb-rank.rest { color: var(--muted); font-size: 14px; }
+
+    .lb-avatar {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: grid;
+      place-items: center;
+      font-size: 16px;
+      font-weight: 700;
+      color: #000;
+      font-family: var(--font-head);
+      flex-shrink: 0;
+    }
+
+    .lb-info { flex: 1; }
+    .lb-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    .lb-detail {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.3px;
+    }
+
+    .lb-score {
+      font-family: var(--font-head);
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .lb-xp-bar {
+      width: 80px; height: 4px;
+      background: rgba(255,255,255,0.07);
+      border-radius: 100px;
+      overflow: hidden;
+    }
+
+    .lb-xp-fill {
+      height: 100%;
+      border-radius: 100px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+
+    /* ─── CTA SECTION ──────────────────────────────── */
+    .cta-section {
+      position: relative;
+      z-index: 2;
+      padding: 80px 24px 120px;
+    }
+
+    .cta-inner {
+      max-width: 1160px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, rgba(0,229,255,0.06), rgba(123,47,255,0.06));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 28px;
+      padding: 80px 60px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-inner::before {
+      content: '';
+      position: absolute;
+      top: -50%; left: 50%;
+      transform: translateX(-50%);
+      width: 600px; height: 300px;
+      background: radial-gradient(ellipse, rgba(0,229,255,0.1), transparent 70%);
+      pointer-events: none;
+    }
+
+    .cta-title {
+      font-family: var(--font-head);
+      font-size: clamp(30px, 5vw, 52px);
+      font-weight: 800;
+      letter-spacing: -2px;
+      line-height: 1.05;
+      margin-bottom: 16px;
+    }
+
+    .cta-sub {
+      font-size: 15px;
+      color: var(--muted);
+      margin-bottom: 36px;
+      max-width: 440px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.65;
+    }
+
+    /* ─── FOOTER ───────────────────────────────────── */
+    footer {
+      position: relative;
+      z-index: 2;
+      border-top: 1px solid var(--border);
+      padding: 32px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-left {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.3px;
+    }
+
+    .footer-right {
+      display: flex;
+      gap: 20px;
+    }
+
+    .footer-right a {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .2s;
+    }
+    .footer-right a:hover { color: var(--text); }
+
+    /* ─── ANIMATIONS ───────────────────────────────── */
+    @keyframes fadeSlideDown {
+      from { opacity: 0; transform: translateY(-18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity .7s ease, transform .7s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ─── MOBILE NAV ───────────────────────────────── */
+    .nav-mobile-toggle {
+      display: none;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 38px; height: 38px;
+      border-radius: 9px;
+      cursor: pointer;
+      font-size: 18px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(8,11,16,.97);
+      z-index: 200;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      backdrop-filter: blur(20px);
+    }
+
+    .mobile-menu.open { display: flex; }
+
+    .mobile-menu a {
+      font-family: var(--font-head);
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: -1px;
+      transition: color .2s;
+    }
+    .mobile-menu a:hover { color: var(--accent); }
+
+    .mobile-close {
+      position: absolute;
+      top: 20px; right: 24px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 28px;
+      cursor: pointer;
+      transition: color .2s;
+    }
+    .mobile-close:hover { color: var(--text); }
+
+    /* ─── RESPONSIVE ───────────────────────────────── */
+    @media (max-width: 768px) {
+      nav { padding: 14px 20px; }
+      .nav-links, .nav-cta { display: none; }
+      .nav-mobile-toggle { display: flex; }
+      .hero { padding: 120px 20px 60px; }
+      section { padding: 60px 20px; }
+      .cta-inner { padding: 48px 24px; }
+      footer { padding: 24px 20px; flex-direction: column; align-items: flex-start; }
+      .categories-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+      .stats-row { gap: 20px; }
+      .stat-divider { display: none; }
+      .stat-value { font-size: 22px; }
+    }
+
+    /* ─── SCROLLBAR ────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+  </style>
+</head>
+<body>
+
+<!-- ── CANVAS BACKGROUND ─────────────────────────── -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- ── MOBILE MENU ───────────────────────────────── -->
+<div class="mobile-menu" id="mobileMenu">
+  <button class="mobile-close" id="mobileClose">✕</button>
+  <a href="#categorias">Categorias</a>
+  <a href="#modos">Modos</a>
+  <a href="#ranking">Ranking</a>
+  <a href="login.html">Entrar</a>
+  <a href="register.html" style="color:var(--accent)">Registar</a>
+</div>
+
+<!-- ── NAV ──────────────────────────────────────── -->
+<nav>
+  <a class="nav-logo" href="#">
+    <div class="logo-icon">⚡</div>
+    <span class="logo-text">TechQuiz Arena</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#categorias">Categorias</a></li>
+    <li><a href="#modos">Modos</a></li>
+    <li><a href="#ranking">Ranking</a></li>
+    <li><a href="#features">Features</a></li>
+  </ul>
+  <div class="nav-cta">
+    <a class="btn btn-ghost" href="login.html">Entrar</a>
+    <a class="btn btn-primary" href="register.html">Começar Grátis →</a>
+  </div>
+  <button class="nav-mobile-toggle" id="mobileToggle">☰</button>
+</nav>
+
+<!-- ── HERO ─────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-badge">
+    <span class="badge-dot"></span>
+    PLATAFORMA DE QUIZ TECNOLÓGICO
+  </div>
+
+  <h1 class="hero-title">
+    <span class="line1">Teste o Teu</span>
+    <span class="line2">Conhecimento Tech</span>
+  </h1>
+
+  <p class="hero-sub">
+    Competes, aprendes e sobres de nível.<br/>
+    <span>15 categorias · 4 modos de jogo · ranking global.</span>
+  </p>
+
+  <div class="hero-actions">
+    <a class="btn btn-primary btn-lg" href="register.html">🚀 Jogar Agora</a>
+    <a class="btn btn-ghost btn-lg" href="#modos">Ver Modos →</a>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-item">
+      <span class="stat-value" data-target="12480">0</span>
+      <span class="stat-label">JOGADORES</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-value" data-target="850">0</span>
+      <span class="stat-label">PERGUNTAS</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-value" data-target="15">0</span>
+      <span class="stat-label">CATEGORIAS</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-value" data-target="4">0</span>
+      <span class="stat-label">MODOS DE JOGO</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── CATEGORIES ────────────────────────────────── -->
+<section id="categorias">
+  <div class="container">
+    <p class="section-label reveal">/ CATEGORIAS</p>
+    <h2 class="section-title reveal">Escolhe a Tua<br/>Especialidade</h2>
+    <p class="section-sub reveal">15 categorias de informática cobrindo do hardware ao desenvolvimento web, da cibersegurança à inteligência artificial.</p>
+
+    <div class="categories-grid">
+      <a class="cat-card reveal" href="quiz.html?cat=hardware" data-color="cyan">
+        <div class="cat-icon">🖥️</div>
+        <div>
+          <div class="cat-name">Hardware</div>
+          <div class="cat-count">48 perguntas</div>
+        </div>
+        <span class="cat-arrow">→</span>
+      </a>
+      <a class="cat-card reveal" href="quiz.html?cat=software" data-color="purple">
+        <div class="cat-icon">💿</div>
+        <div>
+          <div class="cat-name">Software</div>
+          <div class="cat-count">52 perguntas</div>
+        </div>
+        <span class="cat-arrow">→</span>
+      </a>
+      <a class="cat-card reveal" href="quiz.html?cat=redes" data-color="pink">
+        <div class="cat-icon">🌐</div>
+        <div>
+          <div class="cat-name">Redes</div>
+          <div class="cat-count">60 perguntas</div>
+        </div>
+        <span class="cat-arrow">→</span>
+      </a>
+      <a class="cat-card reveal" href="quiz.html?cat=programacao" data-color="gold">
+        <div class="cat-icon">💻</div>
+        <div>
+          <div class="cat-name">Programação</div>
+          <div class="cat-count">75 perguntas</div>
+        </div>
+        <span class="cat-arrow">→</span>
+      </a>
+      <a class="cat-card reveal" href="quiz.html?cat=cyber" data-color="green">
+        <div class="cat-icon">🛡️</div>
+        <div>
+          <div class="cat-name">Cibersegurança</div>
+          <div class="cat-count">55 perguntas</div>
+        </div>
+        <span class="cat-arrow">→</span>
+      </a>
+      <a class="cat-card reveal" href="quiz.html?cat=historia" data-color="orange">
+        <div class="cat-icon">📜</div>
+        <div>
+          <div class="cat-name">História da Computação</div>
+          <div class="cat-count">40 perguntas</div>
+        </div>
+        <span class="cat-arrow">→</span>
+      </a>
+      <a class="cat-card reveal" href="quiz.html?cat=so" data-color="blue">
+        <div class="cat-icon">🐧</div>
+        <div>
+          <div class="cat-name">Sistemas Operativos</div>
+          <div class="cat-count">45 perguntas</div>
+        </div>
+        <span class="cat-arrow">→</span>
+      </a>
+      <a class="cat-card reveal" href="quiz.html?cat=ia" data-color="cyan">
+        <div class="cat-icon">🤖</div>
+        <div>
+          <div class="cat-name">Inteligência Artificial</div>
+          <div class="cat-count">50 perguntas</div>
+        </div>
+        <span class="cat-arrow">→</span>
+      </a>
+      <a class="cat-card reveal" href="quiz.html?cat=internet" data-color="purple">
+        <div class="cat-icon">🔗</div>
+        <div>
+          <div class="cat-name">Internet</div>
+          <div class="cat-count">44 perguntas</div>
+        </div>
+        <span class="cat-arrow">→</span>
+      </a>
+      <a class="cat-card reveal" href="quiz.html?cat=web" data-color="pink">
+        <div class="cat-icon">🌍</div>
+        <div>
+          <div class="cat-name">Desenvolvimento Web</div>
+          <div class="cat-count">68 perguntas</div>
+        </div>
+        <span class="cat-arrow">→</span>
+      </a>
+      <a class="cat-card reveal" href="quiz.html?cat=bd" data-color="gold">
+        <div class="cat-icon">🗄️</div>
+        <div>
+          <div class="cat-name">Bases de Dados</div>
+          <div class="cat-count">56 perguntas</div>
+        </div>
+        <span class="cat-arrow">→</span>
+      </a>
+      <a class="cat-card reveal" href="quiz.html?cat=python" data-color="green">
+        <div class="cat-icon">🐍</div>
+        <div>
+          <div class="cat-name">Python</div>
+          <div class="cat-count">62 perguntas</div>
+        </div>
+        <span class="cat-arrow">→</span>
+      </a>
+      <a class="cat-card reveal" href="quiz.html?cat=js" data-color="orange">
+        <div class="cat-icon">⚡</div>
+        <div>
+          <div class="cat-name">JavaScript</div>
+          <div class="cat-count">58 perguntas</div>
+        </div>
+        <span class="cat-arrow">→</span>
+      </a>
+      <a class="cat-card reveal" href="quiz.html?cat=linux" data-color="blue">
+        <div class="cat-icon">🐧</div>
+        <div>
+          <div class="cat-name">Linux</div>
+          <div class="cat-count">49 perguntas</div>
+        </div>
+        <span class="cat-arrow">→</span>
+      </a>
+      <a class="cat-card reveal" href="quiz.html?cat=geral" data-color="red">
+        <div class="cat-icon">🔧</div>
+        <div>
+          <div class="cat-name">Tecnologia Geral</div>
+          <div class="cat-count">88 perguntas</div>
+        </div>
+        <span class="cat-arrow">→</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── GAME MODES ─────────────────────────────────── -->
+<section id="modos" style="background: linear-gradient(180deg, transparent, rgba(123,47,255,0.04), transparent);">
+  <div class="container">
+    <p class="section-label reveal">/ MODOS DE JOGO</p>
+    <h2 class="section-title reveal">Escolhe Como<br/>Queres Jogar</h2>
+    <p class="section-sub reveal">Quatro experiências únicas. Cada modo oferece uma forma diferente de desafiar o teu conhecimento técnico.</p>
+
+    <div class="modes-grid">
+      <a class="mode-card classic reveal" href="login.html">
+        <div class="mode-emoji">🎯</div>
+        <div class="mode-name">Clássico</div>
+        <div class="mode-desc">10 perguntas, 30 segundos cada. Pontuação baseada na precisão e velocidade de resposta.</div>
+        <span class="mode-tag">● PADRÃO</span>
+      </a>
+      <a class="mode-card survival reveal" href="login.html">
+        <div class="mode-emoji">❤️</div>
+        <div class="mode-name">Sobrevivência</div>
+        <div class="mode-desc">3 vidas. Responde o máximo de perguntas possível sem errar mais de 3 vezes.</div>
+        <span class="mode-tag">● INTENSO</span>
+      </a>
+      <a class="mode-card speed reveal" href="login.html">
+        <div class="mode-emoji">⚡</div>
+        <div class="mode-name">Modo Rápido</div>
+        <div class="mode-desc">10 segundos por pergunta. Reflexos rápidos e conhecimento instantâneo são essenciais.</div>
+        <span class="mode-tag">● RÁPIDO</span>
+      </a>
+      <a class="mode-card daily reveal" href="login.html">
+        <div class="mode-emoji">📅</div>
+        <div class="mode-name">Daily Challenge</div>
+        <div class="mode-desc">Um quiz especial por dia. Competes com todos os jogadores pelo ranking diário.</div>
+        <span class="mode-tag">● DIÁRIO</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ───────────────────────────────────── -->
+<section id="features">
+  <div class="container">
+    <p class="section-label reveal">/ FUNCIONALIDADES</p>
+    <h2 class="section-title reveal">Tudo o Que<br/>Precisas</h2>
+    <p class="section-sub reveal">Uma plataforma completa desenhada para uma experiência de aprendizagem competitiva e envolvente.</p>
+
+    <div class="features-grid reveal">
+      <div class="feat-card">
+        <div class="feat-icon-wrap cyan">🏆</div>
+        <div class="feat-title">Sistema de Níveis & XP</div>
+        <div class="feat-desc">Ganha experiência em cada quiz. Sobe de nível e desbloqueias novas categorias, badges e recompensas especiais.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon-wrap purple">🔥</div>
+        <div class="feat-title">Streaks & Combos</div>
+        <div class="feat-desc">Responde perguntas consecutivas corretamente para ativar multiplicadores de pontos e manter a tua sequência viva.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon-wrap pink">📊</div>
+        <div class="feat-title">Estatísticas Avançadas</div>
+        <div class="feat-desc">Gráficos de desempenho, taxa de acerto por categoria, tempo médio de resposta e evolução ao longo do tempo.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon-wrap gold">🎖️</div>
+        <div class="feat-title">Conquistas & Badges</div>
+        <div class="feat-desc">Mais de 30 conquistas desbloqueáveis. Desde a primeira resposta correta até ao maestro de cibersegurança.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon-wrap green">💰</div>
+        <div class="feat-title">Moedas Virtuais</div>
+        <div class="feat-desc">Ganha TechCoins por acertos, streaks e conquistas. Usa-as para desbloquear categorias exclusivas e temas.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon-wrap blue">🌍</div>
+        <div class="feat-title">Ranking Global</div>
+        <div class="feat-desc">Compete com jogadores de todo o mundo. Rankings diários, semanais e de todos os tempos atualizados em tempo real.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── LEADERBOARD PREVIEW ────────────────────────── -->
+<section id="ranking">
+  <div class="container">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start;">
+      <div>
+        <p class="section-label reveal">/ TOP JOGADORES</p>
+        <h2 class="section-title reveal">Ranking<br/>Global</h2>
+        <p class="section-sub reveal">Os melhores jogadores da plataforma. Serás o próximo a entrar no topo?</p>
+        <a class="btn btn-primary reveal" href="login.html">Ver Ranking Completo →</a>
+      </div>
+      <div class="leaderboard-preview reveal">
+        <div class="lb-header">
+          <span class="lb-title">Top Jogadores</span>
+          <span class="lb-live"><span class="lb-live-dot"></span>AO VIVO</span>
+        </div>
+        <div class="lb-row">
+          <span class="lb-rank top1">🥇</span>
+          <div class="lb-avatar" style="background:linear-gradient(135deg,#ffd84d,#ff8c42)">A</div>
+          <div class="lb-info">
+            <div class="lb-name">AlexTech</div>
+            <div class="lb-detail">Nível 42 · 98% acertos</div>
+          </div>
+          <div>
+            <div class="lb-score">48,920</div>
+            <div class="lb-xp-bar"><div class="lb-xp-fill" style="width:95%"></div></div>
+          </div>
+        </div>
+        <div class="lb-row">
+          <span class="lb-rank top2">🥈</span>
+          <div class="lb-avatar" style="background:linear-gradient(135deg,#00e5ff,#4f9dff)">M</div>
+          <div class="lb-info">
+            <div class="lb-name">MariaDev</div>
+            <div class="lb-detail">Nível 39 · 96% acertos</div>
+          </div>
+          <div>
+            <div class="lb-score">45,300</div>
+            <div class="lb-xp-bar"><div class="lb-xp-fill" style="width:88%"></div></div>
+          </div>
+        </div>
+        <div class="lb-row">
+          <span class="lb-rank top3">🥉</span>
+          <div class="lb-avatar" style="background:linear-gradient(135deg,#7b2fff,#ff4f7b)">C</div>
+          <div class="lb-info">
+            <div class="lb-name">CiberMestre</div>
+            <div class="lb-detail">Nível 36 · 94% acertos</div>
+          </div>
+          <div>
+            <div class="lb-score">41,750</div>
+            <div class="lb-xp-bar"><div class="lb-xp-fill" style="width:82%"></div></div>
+          </div>
+        </div>
+        <div class="lb-row">
+          <span class="lb-rank rest">#4</span>
+          <div class="lb-avatar" style="background:linear-gradient(135deg,#00e099,#4f9dff)">J</div>
+          <div class="lb-info">
+            <div class="lb-name">JoãoLinux</div>
+            <div class="lb-detail">Nível 33 · 91% acertos</div>
+          </div>
+          <div>
+            <div class="lb-score">38,200</div>
+            <div class="lb-xp-bar"><div class="lb-xp-fill" style="width:75%"></div></div>
+          </div>
+        </div>
+        <div class="lb-row">
+          <span class="lb-rank rest">#5</span>
+          <div class="lb-avatar" style="background:linear-gradient(135deg,#ff4f7b,#ffd84d)">S</div>
+          <div class="lb-info">
+            <div class="lb-name">SaraPython</div>
+            <div class="lb-detail">Nível 30 · 89% acertos</div>
+          </div>
+          <div>
+            <div class="lb-score">34,900</div>
+            <div class="lb-xp-bar"><div class="lb-xp-fill" style="width:68%"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ────────────────────────────────────────── -->
+<div class="cta-section">
+  <div class="cta-inner reveal">
+    <h2 class="cta-title">Pronto para entrar<br/>na <span style="background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Arena</span>?</h2>
+    <p class="cta-sub">Cria a tua conta grátis, escolhe uma categoria e começa a conquistar o ranking global agora mesmo.</p>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+      <a class="btn btn-primary btn-lg" href="register.html">🚀 Criar Conta Grátis</a>
+      <a class="btn btn-ghost btn-lg" href="login.html">Já tenho conta</a>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOOTER ─────────────────────────────────────── -->
+<footer>
+  <div class="footer-left">© 2025 TechQuiz Arena — Todos os direitos reservados</div>
+  <div class="footer-right">
+    <a href="#">Privacidade</a>
+    <a href="#">Termos</a>
+    <a href="#">Contacto</a>
+    <a href="#">GitHub</a>
+  </div>
+</footer>
+
+<!-- ─── JAVASCRIPT ──────────────────────────────────── -->
+<script>
+  /* ── CANVAS BACKGROUND GRID + PARTICLES ─── */
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  class Particle {
+    constructor() { this.reset(); }
+    reset() {
+      this.x = Math.random() * W;
+      this.y = Math.random() * H;
+      this.vx = (Math.random() - .5) * .3;
+      this.vy = (Math.random() - .5) * .3;
+      this.size = Math.random() * 1.5 + .5;
+      this.alpha = Math.random() * .4 + .05;
+      this.color = Math.random() > .6
+        ? `rgba(0,229,255,${this.alpha})`
+        : Math.random() > .5
+          ? `rgba(123,47,255,${this.alpha})`
+          : `rgba(255,79,123,${this.alpha})`;
+    }
+    update() {
+      this.x += this.vx; this.y += this.vy;
+      if (this.x < 0 || this.x > W || this.y < 0 || this.y > H) this.reset();
+    }
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fillStyle = this.color;
+      ctx.fill();
+    }
+  }
+
+  for (let i = 0; i < 90; i++) particles.push(new Particle());
+
+  function drawGrid() {
+    const gridSize = 60;
+    ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < W; x += gridSize) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    }
+    for (let y = 0; y < H; y += gridSize) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+  }
+
+  function drawGlow() {
+    const grad = ctx.createRadialGradient(W*.5, H*.3, 0, W*.5, H*.3, W*.55);
+    grad.addColorStop(0, 'rgba(0,229,255,0.04)');
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    const grad2 = ctx.createRadialGradient(W*.8, H*.7, 0, W*.8, H*.7, W*.4);
+    grad2.addColorStop(0, 'rgba(123,47,255,0.04)');
+    grad2.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad2;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, W, H);
+    drawGrid();
+    drawGlow();
+    particles.forEach(p => { p.update(); p.draw(); });
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  /* ── ANIMATED COUNTERS ─── */
+  function animateCounter(el, target) {
+    const duration = 2000;
+    const start = performance.now();
+    const update = (now) => {
+      const t = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - t, 4);
+      const val = Math.round(ease * target);
+      el.textContent = val.toLocaleString('pt-PT');
+      if (t < 1) requestAnimationFrame(update);
+    };
+    requestAnimationFrame(update);
+  }
+
+  const counterObserver = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const target = parseInt(e.target.dataset.target);
+        animateCounter(e.target, target);
+        counterObserver.unobserve(e.target);
+      }
+    });
+  }, { threshold: .5 });
+
+  document.querySelectorAll('[data-target]').forEach(el => counterObserver.observe(el));
+
+  /* ── SCROLL REVEAL ─── */
+  const revealObs = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        // stagger children within a parent group
+        const delay = Array.from(e.target.parentElement?.querySelectorAll('.reveal') || []).indexOf(e.target) * 60;
+        setTimeout(() => e.target.classList.add('visible'), delay);
+        revealObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: .1, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+  /* ── MOBILE MENU ─── */
+  document.getElementById('mobileToggle').addEventListener('click', () => {
+    document.getElementById('mobileMenu').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  });
+  document.getElementById('mobileClose').addEventListener('click', () => {
+    document.getElementById('mobileMenu').classList.remove('open');
+    document.body.style.overflow = '';
+  });
+  document.querySelectorAll('.mobile-menu a').forEach(a => {
+    a.addEventListener('click', () => {
+      document.getElementById('mobileMenu').classList.remove('open');
+      document.body.style.overflow = '';
+    });
+  });
+
+  /* ── NAV SCROLL EFFECT ─── */
+  const nav = document.querySelector('nav');
+  window.addEventListener('scroll', () => {
+    nav.style.borderBottomColor = window.scrollY > 20
+      ? 'rgba(255,255,255,0.1)'
+      : 'rgba(255,255,255,0.07)';
+  });
+
+  /* ── LEADERBOARD RANKING ─── */
+  // Responsive: if screen < 900 stack
+  function checkLayout() {
+    const section = document.querySelector('#ranking .container > div');
+    if (!section) return;
+    if (window.innerWidth < 900) {
+      section.style.gridTemplateColumns = '1fr';
+    } else {
+      section.style.gridTemplateColumns = '1fr 1fr';
+    }
+  }
+  checkLayout();
+  window.addEventListener('resize', checkLayout);
+</script>
+</body>
+</html>
