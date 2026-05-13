@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ranking · TechQuiz Arena</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #080b10;
+      --surface:   #0d1117;
+      --panel:     #111820;
+      --panel2:    #141c26;
+      --border:    rgba(255,255,255,0.07);
+      --border-hi: rgba(255,255,255,0.14);
+      --accent:    #00e5ff;
+      --accent2:   #7b2fff;
+      --accent3:   #ff4f7b;
+      --gold:      #ffd84d;
+      --silver:    #c0cfe0;
+      --bronze:    #cd8a50;
+      --text:      #e8edf5;
+      --muted:     #5a6a7e;
+      --success:   #00e099;
+      --danger:    #ff4f7b;
+      --warn:      #ff8c42;
+      --font-head: 'Syne', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+      --font-body: 'Outfit', sans-serif;
+      --sidebar-w: 240px;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-body); overflow-x: hidden; }
+    #bg-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.025; z-index: 1; pointer-events: none;
+    }
+
+    /* ── APP SHELL ── */
+    .app { position: relative; z-index: 2; display: flex; min-height: 100vh; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: var(--sidebar-w); min-height: 100vh; flex-shrink: 0;
+      background: rgba(13,17,23,0.85); backdrop-filter: blur(20px);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      position: fixed; top: 0; left: 0; bottom: 0;
+      z-index: 100; transition: transform .3s cubic-bezier(.4,0,.2,1);
+    }
+    .sidebar-logo {
+      display: flex; align-items: center; gap: 10px;
+      padding: 24px 20px 20px; text-decoration: none; border-bottom: 1px solid var(--border);
+    }
+    .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg,var(--accent),var(--accent2)); border-radius: 10px; display: grid; place-items: center; font-size: 18px; box-shadow: 0 0 20px rgba(0,229,255,0.3); flex-shrink: 0; }
+    .logo-text { font-family: var(--font-head); font-size: 16px; font-weight: 800; letter-spacing: -.5px; background: linear-gradient(90deg,var(--accent),var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .sidebar-user { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    .user-avatar-sm { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg,var(--accent),var(--accent2)); display: grid; place-items: center; font-size: 18px; flex-shrink: 0; border: 1.5px solid rgba(0,229,255,0.3); }
+    .user-meta { min-width: 0; }
+    .user-name-sm { font-size: 13.5px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-level-sm { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); }
+    .xp-badge { font-family: var(--font-mono); font-size: 10px; padding: 3px 8px; border-radius: 100px; background: rgba(0,229,255,0.1); border: 1px solid rgba(0,229,255,0.2); color: var(--accent); letter-spacing: .3px; margin-left: auto; }
+    .sidebar-nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
+    .nav-section-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; color: var(--muted); padding: 10px 8px 6px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; color: var(--muted); font-size: 13.5px; font-weight: 500; text-decoration: none; cursor: pointer; transition: all .2s; position: relative; border: 1px solid transparent; }
+    .nav-item:hover { background: rgba(255,255,255,0.05); color: var(--text); border-color: var(--border); }
+    .nav-item.active { background: linear-gradient(135deg,rgba(0,229,255,0.1),rgba(123,47,255,0.08)); color: var(--accent); border-color: rgba(0,229,255,0.2); }
+    .nav-item.active::before { content:''; position:absolute; left:0; top:20%; bottom:20%; width:2px; border-radius:2px; background:linear-gradient(180deg,var(--accent),var(--accent2)); }
+    .nav-icon { font-size: 16px; flex-shrink: 0; width: 20px; text-align: center; }
+    .nav-badge { margin-left: auto; font-family: var(--font-mono); font-size: 10px; padding: 2px 7px; border-radius: 100px; background: rgba(255,79,123,0.15); color: var(--danger); border: 1px solid rgba(255,79,123,0.25); }
+    .sidebar-bottom { padding: 12px; border-top: 1px solid var(--border); }
+    .btn-logout { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 12px; border-radius: 10px; background: none; border: 1px solid var(--border); color: var(--muted); font-family: var(--font-body); font-size: 13px; cursor: pointer; transition: all .2s; }
+    .btn-logout:hover { background: rgba(255,79,123,0.07); border-color: rgba(255,79,123,0.25); color: var(--danger); }
+
+    /* ── MAIN ── */
+    .main { flex: 1; margin-left: var(--sidebar-w); display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* ── TOPBAR ── */
+    .topbar { display: flex; align-items: center; gap: 16px; padding: 16px 32px; border-bottom: 1px solid var(--border); background: rgba(8,11,16,0.8); backdrop-filter: blur(16px); position: sticky; top: 0; z-index: 50; }
+    .topbar-burger { display: none; background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 4px; }
+    .topbar-title { font-family: var(--font-head); font-size: 16px; font-weight: 700; letter-spacing: -.3px; }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+    .stat-pill { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 100px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); font-family: var(--font-mono); font-size: 12px; color: var(--text); }
+    .stat-pill.gold-pill { border-color: rgba(255,216,77,0.2); background: rgba(255,216,77,0.06); color: var(--gold); }
+    .stat-pill.cyan-pill { border-color: rgba(0,229,255,0.2); background: rgba(0,229,255,0.06); color: var(--accent); }
+
+    /* ── SIDEBAR OVERLAY ── */
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 99; backdrop-filter: blur(4px); }
+
+    /* ── CONTENT ── */
+    .content { padding: 32px; flex: 1; }
+
+    /* ── PAGE HEADER ── */
+    .page-header { margin-bottom: 32px; animation: fadeSlideUp .6s ease both; }
+    .page-eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: 2px; color: var(--accent2); margin-bottom: 8px; }
+    .page-title { font-family: var(--font-head); font-size: clamp(24px,4vw,38px); font-weight: 800; letter-spacing: -1.5px; margin-bottom: 6px; }
+    .page-title .grad { background: linear-gradient(90deg, var(--gold), var(--warn)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .page-sub { font-size: 14px; color: var(--muted); }
+
+    /* ── FILTER BAR ── */
+    .filter-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; flex-wrap: wrap; animation: fadeSlideUp .6s .05s ease both; }
+    .filter-chip { padding: 8px 16px; border-radius: 100px; font-family: var(--font-mono); font-size: 12px; border: 1px solid var(--border); background: rgba(255,255,255,0.04); color: var(--muted); cursor: pointer; transition: all .2s; }
+    .filter-chip:hover { border-color: var(--border-hi); color: var(--text); }
+    .filter-chip.active { background: rgba(0,229,255,0.1); border-color: rgba(0,229,255,0.35); color: var(--accent); }
+    .filter-chip.active.gold { background: rgba(255,216,77,0.1); border-color: rgba(255,216,77,0.35); color: var(--gold); }
+    .filter-search { margin-left: auto; display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 100px; padding: 7px 16px; transition: border-color .2s; }
+    .filter-search:focus-within { border-color: rgba(0,229,255,0.35); }
+    .filter-search input { background: none; border: none; outline: none; color: var(--text); font-family: var(--font-body); font-size: 13px; width: 160px; }
+    .filter-search input::placeholder { color: var(--muted); }
+    .filter-search span { color: var(--muted); font-size: 14px; }
+
+    /* ── TOP 3 PODIUM ── */
+    .podium-section { margin-bottom: 36px; animation: fadeSlideUp .6s .1s ease both; }
+    .podium-wrap { display: flex; align-items: flex-end; justify-content: center; gap: 16px; padding: 0 0 24px; }
+
+    .podium-card {
+      display: flex; flex-direction: column; align-items: center;
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 18px; padding: 24px 20px 0;
+      position: relative; overflow: hidden;
+      transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+      cursor: pointer;
+    }
+    .podium-card:hover { transform: translateY(-6px); }
+    .podium-card::before { content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity .3s; pointer-events: none; }
+
+    /* 1st place */
+    .podium-card.p1 { width: 180px; border-color: rgba(255,216,77,0.35); background: linear-gradient(180deg, rgba(255,216,77,0.06) 0%, var(--panel) 60%); }
+    .podium-card.p1::before { background: radial-gradient(ellipse at 50% 0%, rgba(255,216,77,0.12), transparent 65%); opacity: 1; }
+    .podium-card.p2 { width: 155px; border-color: rgba(192,207,224,0.25); background: linear-gradient(180deg, rgba(192,207,224,0.05) 0%, var(--panel) 60%); }
+    .podium-card.p2::before { background: radial-gradient(ellipse at 50% 0%, rgba(192,207,224,0.08), transparent 65%); opacity: 1; }
+    .podium-card.p3 { width: 145px; border-color: rgba(205,138,80,0.25); background: linear-gradient(180deg, rgba(205,138,80,0.05) 0%, var(--panel) 60%); }
+    .podium-card.p3::before { background: radial-gradient(ellipse at 50% 0%, rgba(205,138,80,0.08), transparent 65%); opacity: 1; }
+
+    .podium-crown { font-size: 26px; margin-bottom: 8px; animation: float 3s ease-in-out infinite; }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+
+    .podium-avatar { font-size: 30px; width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; margin-bottom: 10px; position: relative; }
+    .p1 .podium-avatar { background: linear-gradient(135deg, rgba(255,216,77,0.2), rgba(255,140,66,0.15)); border: 2px solid var(--gold); box-shadow: 0 0 20px rgba(255,216,77,0.25); }
+    .p2 .podium-avatar { background: linear-gradient(135deg, rgba(192,207,224,0.15), rgba(100,120,150,0.1)); border: 2px solid var(--silver); }
+    .p3 .podium-avatar { background: linear-gradient(135deg, rgba(205,138,80,0.15), rgba(160,100,60,0.1)); border: 2px solid var(--bronze); }
+
+    .podium-username { font-family: var(--font-head); font-size: 14px; font-weight: 700; letter-spacing: -.3px; margin-bottom: 4px; text-align: center; }
+    .p1 .podium-username { color: var(--gold); }
+    .p2 .podium-username { color: var(--silver); }
+    .p3 .podium-username { color: var(--bronze); }
+
+    .podium-pts { font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .podium-level { font-family: var(--font-mono); font-size: 10px; color: var(--muted); margin-bottom: 18px; }
+
+    .podium-bar { width: 100%; border-radius: 0 0 0 0; display: flex; align-items: center; justify-content: center; padding: 10px 0; margin: 0 -20px; width: calc(100% + 40px); }
+    .p1 .podium-bar { background: linear-gradient(135deg, rgba(255,216,77,0.15), rgba(255,140,66,0.1)); border-top: 1px solid rgba(255,216,77,0.2); }
+    .p2 .podium-bar { background: rgba(192,207,224,0.06); border-top: 1px solid rgba(192,207,224,0.15); }
+    .p3 .podium-bar { background: rgba(205,138,80,0.06); border-top: 1px solid rgba(205,138,80,0.15); }
+    .podium-rank-num { font-family: var(--font-head); font-size: 24px; font-weight: 800; }
+    .p1 .podium-rank-num { color: var(--gold); }
+    .p2 .podium-rank-num { color: var(--silver); }
+    .p3 .podium-rank-num { color: var(--bronze); }
+
+    /* me badge */
+    .me-badge { position: absolute; top: 10px; right: 10px; font-family: var(--font-mono); font-size: 9px; padding: 2px 7px; border-radius: 100px; background: rgba(0,229,255,0.15); border: 1px solid rgba(0,229,255,0.3); color: var(--accent); }
+
+    /* ── STATS ROW ── */
+    .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 28px; animation: fadeSlideUp .6s .15s ease both; }
+    .mini-stat { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+    .mini-stat-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .mini-stat-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: .5px; color: var(--muted); }
+    .mini-stat-icon { font-size: 16px; }
+    .mini-stat-val { font-family: var(--font-head); font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+    .mini-stat-val.gold { color: var(--gold); }
+    .mini-stat-val.cyan { color: var(--accent); }
+    .mini-stat-val.green { color: var(--success); }
+    .mini-stat-val.purple { color: var(--accent2); }
+
+    /* ── MY RANK BANNER ── */
+    .my-rank-banner {
+      background: linear-gradient(135deg, rgba(0,229,255,0.07), rgba(123,47,255,0.05));
+      border: 1px solid rgba(0,229,255,0.2); border-radius: 14px;
+      padding: 16px 22px; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 16px;
+      animation: fadeSlideUp .6s .2s ease both;
+      display: none;
+    }
+    .my-rank-banner.show { display: flex; }
+    .my-rank-pos { font-family: var(--font-head); font-size: 28px; font-weight: 800; color: var(--accent); letter-spacing: -1px; min-width: 48px; }
+    .my-rank-info { flex: 1; }
+    .my-rank-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .my-rank-sub { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+    .my-rank-pts { font-family: var(--font-head); font-size: 18px; font-weight: 800; color: var(--accent); }
+    .my-rank-label { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-align: right; }
+
+    /* ── RANKING TABLE ── */
+    .ranking-section { animation: fadeSlideUp .6s .25s ease both; }
+    .ranking-head { display: grid; grid-template-columns: 52px 1fr 100px 80px 70px 70px; gap: 0; padding: 10px 20px; border-bottom: 1px solid var(--border); margin-bottom: 6px; }
+    .ranking-head span { font-family: var(--font-mono); font-size: 10px; letter-spacing: .8px; color: var(--muted); }
+
+    .rank-row {
+      display: grid; grid-template-columns: 52px 1fr 100px 80px 70px 70px;
+      align-items: center; gap: 0;
+      padding: 12px 20px; border-radius: 12px;
+      background: var(--panel); border: 1px solid var(--border);
+      margin-bottom: 6px; transition: all .2s; cursor: pointer;
+      animation: fadeSlideUp .4s ease both;
+    }
+    .rank-row:hover { border-color: var(--border-hi); transform: translateX(4px); }
+    .rank-row.is-me { background: linear-gradient(135deg, rgba(0,229,255,0.06), rgba(123,47,255,0.04)); border-color: rgba(0,229,255,0.2); }
+    .rank-row.top1 { border-color: rgba(255,216,77,0.25); }
+    .rank-row.top2 { border-color: rgba(192,207,224,0.2); }
+    .rank-row.top3 { border-color: rgba(205,138,80,0.2); }
+
+    .r-pos { font-family: var(--font-mono); font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 4px; }
+    .r-pos.p1 { color: var(--gold); }
+    .r-pos.p2 { color: var(--silver); }
+    .r-pos.p3 { color: var(--bronze); }
+    .r-pos.rest { color: var(--muted); }
+
+    .r-user { display: flex; align-items: center; gap: 12px; }
+    .r-av { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-size: 16px; flex-shrink: 0; }
+    .r-av.av1 { background: linear-gradient(135deg,rgba(255,216,77,0.15),rgba(255,140,66,0.1)); border: 1.5px solid rgba(255,216,77,0.3); }
+    .r-av.av2 { background: linear-gradient(135deg,rgba(192,207,224,0.12),rgba(100,120,150,0.08)); border: 1.5px solid rgba(192,207,224,0.2); }
+    .r-av.av3 { background: linear-gradient(135deg,rgba(205,138,80,0.12),rgba(160,100,60,0.08)); border: 1.5px solid rgba(205,138,80,0.2); }
+    .r-av.avme { background: linear-gradient(135deg,rgba(0,229,255,0.12),rgba(123,47,255,0.08)); border: 1.5px solid rgba(0,229,255,0.25); }
+    .r-av.avn { background: rgba(255,255,255,0.05); border: 1.5px solid var(--border); }
+    .r-name { font-size: 14px; font-weight: 600; color: var(--text); }
+    .r-name-wrap { display: flex; flex-direction: column; gap: 2px; }
+    .r-title { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+    .r-me-tag { font-family: var(--font-mono); font-size: 9px; padding: 1px 6px; border-radius: 100px; background: rgba(0,229,255,0.12); border: 1px solid rgba(0,229,255,0.25); color: var(--accent); margin-left: 6px; }
+
+    .r-pts { font-family: var(--font-mono); font-size: 13px; font-weight: 500; }
+    .r-pts.p1 { color: var(--gold); }
+    .r-pts.p2 { color: var(--silver); }
+    .r-pts.p3 { color: var(--bronze); }
+    .r-pts.rest { color: var(--accent); }
+
+    .r-quizzes { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+    .r-level { font-family: var(--font-mono); font-size: 12px; }
+    .r-level .lv { padding: 2px 8px; border-radius: 100px; font-size: 10px; background: rgba(123,47,255,0.1); border: 1px solid rgba(123,47,255,0.2); color: var(--accent2); }
+    .r-trend { font-size: 14px; }
+
+    /* ── EMPTY / LOADING ── */
+    .rank-empty { text-align: center; padding: 60px 20px; background: var(--panel); border: 1px dashed var(--border); border-radius: 14px; }
+    .rank-empty-icon { font-size: 44px; margin-bottom: 14px; }
+    .rank-empty-text { font-size: 14px; color: var(--muted); }
+
+    /* ── TOAST ── */
+    .toast-container { position: fixed; top: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+    .toast { display: flex; align-items: center; gap: 12px; pointer-events: all; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; min-width: 260px; box-shadow: 0 8px 32px rgba(0,0,0,.5); animation: toastIn .35s cubic-bezier(.34,1.56,.64,1); position: relative; overflow: hidden; }
+    .toast.removing { animation: toastOut .3s ease forwards; }
+    .toast::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+    .toast.success::before { background: var(--success); }
+    .toast.info::before    { background: var(--accent); }
+    .toast-icon { font-size: 18px; }
+    .toast-text { flex: 1; }
+    .toast-title { font-size: 13px; font-weight: 600; }
+    .toast-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 15px; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeSlideUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:none} }
+    @keyframes toastIn  { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:none} }
+    @keyframes toastOut { to{opacity:0;transform:translateX(20px)} }
+    @keyframes shimmer  { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+    @keyframes glowPulse { 0%,100%{box-shadow:0 0 18px rgba(255,216,77,0.15)} 50%{box-shadow:0 0 36px rgba(255,216,77,0.35)} }
+
+    .p1 { animation: glowPulse 3s ease-in-out infinite; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .stats-row { grid-template-columns: repeat(2,1fr); }
+      .ranking-head { display: none; }
+      .rank-row { grid-template-columns: 44px 1fr 90px 64px; }
+      .rank-row .r-quizzes, .rank-row .r-trend { display: none; }
+      .podium-wrap { gap: 10px; }
+      .podium-card.p1 { width: 155px; }
+      .podium-card.p2 { width: 130px; }
+      .podium-card.p3 { width: 120px; }
+    }
+    @media (max-width: 768px) {
+      :root { --sidebar-w: 0px; }
+      .sidebar { transform: translateX(-240px); width: 240px; }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-overlay.open { display: block; }
+      .main { margin-left: 0; }
+      .topbar-burger { display: block; }
+      .content { padding: 20px 16px; }
+      .topbar { padding: 14px 18px; }
+      .topbar-right .stat-pill { display: none; }
+    }
+    @media (max-width: 520px) {
+      .rank-row { grid-template-columns: 40px 1fr 80px; }
+      .rank-row .r-level { display: none; }
+      .podium-wrap { flex-direction: column; align-items: center; }
+      .podium-card { width: 220px !important; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div class="toast-container" id="toastContainer"></div>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<div class="app">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar" id="sidebar">
+    <a class="sidebar-logo" href="index.html">
+      <div class="logo-icon">⚡</div>
+      <div class="logo-text">TechQuiz Arena</div>
+    </a>
+    <div class="sidebar-user">
+      <div class="user-avatar-sm" id="sidebarAvatar">🧑‍💻</div>
+      <div class="user-meta">
+        <div class="user-name-sm" id="sidebarUsername">Utilizador</div>
+        <div class="user-level-sm">Nível <span id="sidebarLevel">1</span></div>
+      </div>
+      <div class="xp-badge" id="sidebarXP">250 XP</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">PRINCIPAL</div>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon">🏠</span> Dashboard</a>
+      <a class="nav-item" href="quiz.html"><span class="nav-icon">🎮</span> Jogar Quiz <span class="nav-badge">NOVO</span></a>
+      <a class="nav-item active" href="ranking.html"><span class="nav-icon">🏆</span> Ranking Global</a>
+      <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span> Perfil</a>
+      <div class="nav-section-label">DESCOBRIR</div>
+      <a class="nav-item" href="#"><span class="nav-icon">🔥</span> Daily Challenge</a>
+      <a class="nav-item" href="#"><span class="nav-icon">📚</span> Categorias</a>
+      <a class="nav-item" href="#"><span class="nav-icon">⭐</span> Favoritos</a>
+      <a class="nav-item" href="#"><span class="nav-icon">🎖</span> Conquistas</a>
+      <div class="nav-section-label">CONTA</div>
+      <a class="nav-item" href="settings.html"><span class="nav-icon">⚙️</span> Definições</a>
+    </nav>
+    <div class="sidebar-bottom">
+      <button class="btn-logout" onclick="doLogout()">🚪 Terminar sessão</button>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <div class="main">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <button class="topbar-burger" onclick="openSidebar()">☰</button>
+      <div class="topbar-title">🏆 Ranking Global</div>
+      <div class="topbar-right">
+        <div class="stat-pill gold-pill">🪙 <span id="topbarCoins">500</span></div>
+        <div class="stat-pill cyan-pill">⚡ <span id="topbarXP">250 XP</span></div>
+      </div>
+    </header>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- PAGE HEADER -->
+      <div class="page-header">
+        <div class="page-eyebrow">⚡ COMPETIÇÃO GLOBAL</div>
+        <div class="page-title">Hall of <span class="grad">Champions</span></div>
+        <div class="page-sub">Os melhores jogadores da TechQuiz Arena. Serás o próximo?</div>
+      </div>
+
+      <!-- FILTER BAR -->
+      <div class="filter-bar">
+        <div class="filter-chip active gold" id="filter-geral" onclick="setFilter('geral',this)">🏆 Global</div>
+        <div class="filter-chip" id="filter-semana" onclick="setFilter('semana',this)">📅 Esta Semana</div>
+        <div class="filter-chip" id="filter-mes" onclick="setFilter('mes',this)">🗓 Este Mês</div>
+        <div class="filter-chip" id="filter-amigos" onclick="setFilter('amigos',this)">👥 Amigos</div>
+        <div class="filter-search">
+          <span>🔍</span>
+          <input type="text" id="searchInput" placeholder="Pesquisar jogador..." oninput="filterSearch(this.value)" />
+        </div>
+      </div>
+
+      <!-- STATS ROW -->
+      <div class="stats-row" id="statsRow">
+        <div class="mini-stat">
+          <div class="mini-stat-top"><span class="mini-stat-label">JOGADORES</span><span class="mini-stat-icon">👥</span></div>
+          <div class="mini-stat-val purple" id="statPlayers">—</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-top"><span class="mini-stat-label">QUIZZES HOJE</span><span class="mini-stat-icon">🎮</span></div>
+          <div class="mini-stat-val cyan" id="statToday">—</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-top"><span class="mini-stat-label">TOP SCORE</span><span class="mini-stat-icon">⚡</span></div>
+          <div class="mini-stat-val gold" id="statTop">—</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-top"><span class="mini-stat-label">A TUA POSIÇÃO</span><span class="mini-stat-icon">📍</span></div>
+          <div class="mini-stat-val green" id="statMyPos">—</div>
+        </div>
+      </div>
+
+      <!-- PODIUM (TOP 3) -->
+      <div class="podium-section">
+        <div class="podium-wrap" id="podiumWrap">
+          <!-- filled by JS -->
+        </div>
+      </div>
+
+      <!-- MY RANK BANNER -->
+      <div class="my-rank-banner" id="myRankBanner">
+        <div class="my-rank-pos" id="myRankPos">#—</div>
+        <div class="my-rank-info">
+          <div class="my-rank-name" id="myRankName">O teu ranking</div>
+          <div class="my-rank-sub" id="myRankSub">Pontuação total acumulada</div>
+        </div>
+        <div style="text-align:right">
+          <div class="my-rank-pts" id="myRankPts">0 pts</div>
+          <div class="my-rank-label">PONTUAÇÃO</div>
+        </div>
+      </div>
+
+      <!-- TABLE -->
+      <div class="ranking-section">
+        <div class="ranking-head">
+          <span>#</span>
+          <span>JOGADOR</span>
+          <span>PONTUAÇÃO</span>
+          <span>QUIZZES</span>
+          <span>NÍVEL</span>
+          <span>TREND</span>
+        </div>
+        <div id="rankingTable">
+          <!-- filled by JS -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════
+   BG CANVAS
+════════════════════════════════ */
+const bgCanvas = document.getElementById('bg-canvas');
+const bgCtx    = bgCanvas.getContext('2d');
+let BW, BH;
+function resizeBg(){ BW=bgCanvas.width=window.innerWidth; BH=bgCanvas.height=window.innerHeight; }
+resizeBg(); window.addEventListener('resize',resizeBg);
+const bgPts = Array.from({length:55},()=>({
+  x:Math.random()*2000, y:Math.random()*2000,
+  vx:(Math.random()-.5)*.18, vy:(Math.random()-.5)*.18,
+  r:Math.random()*1.3+.4, a:Math.random()*.22+.04,
+  c:Math.random()>.6?[255,216,77]:Math.random()>.5?[0,229,255]:[123,47,255]
+}));
+function drawBg(){
+  bgCtx.clearRect(0,0,BW,BH);
+  bgCtx.strokeStyle='rgba(255,255,255,0.016)'; bgCtx.lineWidth=1;
+  for(let x=0;x<BW;x+=64){bgCtx.beginPath();bgCtx.moveTo(x,0);bgCtx.lineTo(x,BH);bgCtx.stroke();}
+  for(let y=0;y<BH;y+=64){bgCtx.beginPath();bgCtx.moveTo(0,y);bgCtx.lineTo(BW,y);bgCtx.stroke();}
+  const g=bgCtx.createRadialGradient(BW*.7,BH*.2,0,BW*.7,BH*.2,BW*.5);
+  g.addColorStop(0,'rgba(255,216,77,0.04)'); g.addColorStop(1,'transparent');
+  bgCtx.fillStyle=g; bgCtx.fillRect(0,0,BW,BH);
+  bgPts.forEach(p=>{
+    p.x+=p.vx; p.y+=p.vy;
+    if(p.x<0||p.x>BW)p.vx*=-1;
+    if(p.y<0||p.y>BH)p.vy*=-1;
+    bgCtx.beginPath(); bgCtx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    bgCtx.fillStyle=`rgba(${p.c.join(',')},${p.a})`; bgCtx.fill();
+  });
+  requestAnimationFrame(drawBg);
+}
+drawBg();
+
+/* ════════════════════════════════
+   TOAST
+════════════════════════════════ */
+function toast(type,title){
+  const icons={success:'✅',info:'ℹ️'};
+  const tc=document.getElementById('toastContainer');
+  const t=document.createElement('div'); t.className=`toast ${type}`;
+  t.innerHTML=`<span class="toast-icon">${icons[type]||'ℹ️'}</span><div class="toast-text"><div class="toast-title">${title}</div></div><button class="toast-close" onclick="this.parentElement.remove()">✕</button>`;
+  tc.appendChild(t); setTimeout(()=>{t.classList.add('removing');setTimeout(()=>t.remove(),300);},3500);
+}
+
+/* ════════════════════════════════
+   SIDEBAR
+════════════════════════════════ */
+function openSidebar(){ document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('open'); }
+function closeSidebar(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('open'); }
+function doLogout(){ localStorage.removeItem('tqa_session'); window.location.href='login.html'; }
+
+/* ════════════════════════════════
+   DEMO PLAYERS  (seed data)
+════════════════════════════════ */
+const DEMO = [
+  { username:'NeuralNova',  avatar:'🤖', points:48200, level:9, totalQuizzes:312, uid:'demo1' },
+  { username:'ByteKnight',  avatar:'⚡', points:41800, level:8, totalQuizzes:278, uid:'demo2' },
+  { username:'PixelHack',   avatar:'🦊', points:36400, level:7, totalQuizzes:241, uid:'demo3' },
+  { username:'CipherX',     avatar:'🐉', points:29700, level:6, totalQuizzes:199, uid:'demo4' },
+  { username:'ZeroDay',     avatar:'👾', points:24100, level:6, totalQuizzes:168, uid:'demo5' },
+  { username:'RootAccess',  avatar:'🔐', points:20500, level:5, totalQuizzes:144, uid:'demo6' },
+  { username:'GitMaster',   avatar:'🐙', points:17300, level:5, totalQuizzes:122, uid:'demo7' },
+  { username:'SyntaxError', avatar:'💀', points:14800, level:4, totalQuizzes:101, uid:'demo8' },
+  { username:'CloudRider',  avatar:'☁️', points:11200, level:4, totalQuizzes:84,  uid:'demo9' },
+  { username:'NullPointer', avatar:'🎯', points:8600,  level:3, totalQuizzes:67,  uid:'demo10'},
+  { username:'StackOver',   avatar:'📚', points:6100,  level:3, totalQuizzes:50,  uid:'demo11'},
+  { username:'LinuxLord',   avatar:'🐧', points:4200,  level:2, totalQuizzes:35,  uid:'demo12'},
+];
+
+const LEVEL_TITLES = ['Recruta','Aprendiz','Técnico','Programador','Especialista','Hacker','Expert','Ninja','Master','Legend'];
+
+/* ════════════════════════════════
+   STATE
+════════════════════════════════ */
+let session   = null;
+let allPlayers = [];
+let myUid     = null;
+let currentFilter = 'geral';
+let searchTerm    = '';
+
+function loadSession(){
+  try {
+    const s=localStorage.getItem('tqa_session');
+    if(s){ session=JSON.parse(s); myUid=session.uid; }
+  } catch(e){}
+}
+
+function buildPlayerList(){
+  // Real registered users
+  let realUsers = [];
+  try { realUsers=JSON.parse(localStorage.getItem('tqa_users')||'[]'); } catch(e){}
+
+  // merge: real users + demo (avoid username collision)
+  const realNames = new Set(realUsers.map(u=>u.username.toLowerCase()));
+  const filteredDemo = DEMO.filter(d=>!realNames.has(d.username.toLowerCase()));
+
+  allPlayers = [
+    ...realUsers.map(u=>({
+      uid: u.uid,
+      username: u.username||'Anónimo',
+      avatar: u.avatar||'🧑‍💻',
+      points: u.points||0,
+      level: u.level||1,
+      totalQuizzes: u.totalQuizzes||0,
+      isMe: u.uid===myUid,
+    })),
+    ...filteredDemo.map(d=>({...d, isMe:false})),
+  ];
+
+  allPlayers.sort((a,b)=>b.points-a.points);
+}
+
+/* ════════════════════════════════
+   RENDER
+════════════════════════════════ */
+function render(){
+  let list = [...allPlayers];
+
+  // filter
+  if(currentFilter==='semana'){
+    // simulate: top 6 players this week (shuffle slightly)
+    list = list.slice(0,Math.max(6,list.length)).sort(()=>Math.random()-.5).sort((a,b)=>b.points*.6+Math.random()*5000-(a.points*.6+Math.random()*5000)).slice(0,8);
+    list.sort((a,b)=>b.points-a.points);
+  } else if(currentFilter==='mes'){
+    list = list.slice(0,Math.min(10,list.length));
+  } else if(currentFilter==='amigos'){
+    // only show current user + 3 demo players
+    const me = list.find(p=>p.isMe);
+    const others = list.filter(p=>!p.isMe).slice(0,4);
+    list = me ? [me,...others].sort((a,b)=>b.points-a.points) : others;
+  }
+
+  // search
+  if(searchTerm){
+    list = list.filter(p=>p.username.toLowerCase().includes(searchTerm.toLowerCase()));
+  }
+
+  // Stats row
+  document.getElementById('statPlayers').textContent = allPlayers.length.toLocaleString();
+  document.getElementById('statToday').textContent   = Math.floor(Math.random()*180+40);
+  document.getElementById('statTop').textContent     = list[0] ? list[0].points.toLocaleString() : '—';
+  const myPos = allPlayers.findIndex(p=>p.isMe)+1;
+  document.getElementById('statMyPos').textContent   = myPos>0 ? '#'+myPos : '—';
+
+  // Podium
+  renderPodium(list.slice(0,3));
+
+  // My rank banner
+  const myIdx = list.findIndex(p=>p.isMe);
+  const banner = document.getElementById('myRankBanner');
+  if(myIdx>=0 && session){
+    banner.classList.add('show');
+    document.getElementById('myRankPos').textContent  = '#'+(myIdx+1);
+    document.getElementById('myRankName').textContent = session.username||'Tu';
+    document.getElementById('myRankSub').textContent  = `Top ${Math.round(((myIdx+1)/list.length)*100)}% dos jogadores`;
+    document.getElementById('myRankPts').textContent  = (list[myIdx].points||0).toLocaleString()+' pts';
+  } else { banner.classList.remove('show'); }
+
+  // Table
+  renderTable(list);
+
+  // Topbar
+  if(session){
+    document.getElementById('topbarCoins').textContent = session.coins||500;
+    document.getElementById('topbarXP').textContent    = (session.xp||250)+' XP';
+    document.getElementById('sidebarAvatar').textContent = session.avatar||'🧑‍💻';
+    document.getElementById('sidebarUsername').textContent = session.username||'Utilizador';
+    document.getElementById('sidebarLevel').textContent = session.level||1;
+    document.getElementById('sidebarXP').textContent   = (session.xp||250)+' XP';
+  }
+}
+
+/* ── PODIUM ── */
+function renderPodium(top3){
+  const wrap = document.getElementById('podiumWrap');
+  if(!top3.length){ wrap.innerHTML=''; return; }
+
+  // Order: 2nd, 1st, 3rd
+  const order = [top3[1], top3[0], top3[2]].filter(Boolean);
+  const classMap={1:'p1',2:'p2',3:'p3'};
+  const crownMap={1:'👑',2:'🥈',3:'🥉'};
+  const avClassMap={1:'av1',2:'av2',3:'av3'};
+
+  // Find real positions
+  const withPos = [
+    {player:top3[1], pos:2},
+    {player:top3[0], pos:1},
+    {player:top3[2], pos:3},
+  ].filter(x=>x.player);
+
+  wrap.innerHTML = withPos.map(({player,pos})=>`
+    <div class="podium-card ${classMap[pos]}" onclick="highlightRow('${player.uid}')">
+      ${player.isMe?'<div class="me-badge">Tu</div>':''}
+      <div class="podium-crown">${crownMap[pos]}</div>
+      <div class="podium-avatar ${avClassMap[pos]}">${player.avatar}</div>
+      <div class="podium-username">${player.username}</div>
+      <div class="podium-pts">${player.points.toLocaleString()} pts</div>
+      <div class="podium-level">Nível ${player.level} · ${LEVEL_TITLES[Math.min(player.level-1,9)]}</div>
+      <div class="podium-bar"><span class="podium-rank-num">${pos}</span></div>
+    </div>
+  `).join('');
+}
+
+/* ── TABLE ── */
+function renderTable(list){
+  const table = document.getElementById('rankingTable');
+  if(!list.length){
+    table.innerHTML=`<div class="rank-empty"><div class="rank-empty-icon">🔍</div><div class="rank-empty-text">Nenhum jogador encontrado.</div></div>`;
+    return;
+  }
+  const posClass={1:'p1',2:'p2',3:'p3'};
+  const posEmoji={1:'🥇',2:'🥈',3:'🥉'};
+  const avClass={1:'av1',2:'av2',3:'av3'};
+  const trends=['↑','↑','→','↑','↓','→','↑','↓','↑','→','↑','↓'];
+  const trendColors={0:'color:var(--success)',1:'color:var(--success)',2:'color:var(--muted)',3:'color:var(--success)',4:'color:var(--danger)',5:'color:var(--muted)'};
+
+  table.innerHTML = list.map((p,i)=>{
+    const rank=i+1;
+    const cls=posClass[rank]||'rest';
+    const av=avClass[rank]||(p.isMe?'avme':'avn');
+    const trendIdx=Math.floor(Math.random()*6);
+    const trend=trends[trendIdx];
+    const tColor=trendColors[trendIdx];
+    return `<div class="rank-row${rank<=3?' top'+rank:''}${p.isMe?' is-me':''}" id="row-${p.uid}" style="animation-delay:${i*30}ms">
+      <div class="r-pos ${cls}">${posEmoji[rank]||rank}</div>
+      <div class="r-user">
+        <div class="r-av ${av}">${p.avatar}</div>
+        <div class="r-name-wrap">
+          <div class="r-name">${p.username}${p.isMe?'<span class="r-me-tag">TU</span>':''}</div>
+          <div class="r-title">${LEVEL_TITLES[Math.min((p.level||1)-1,9)]}</div>
+        </div>
+      </div>
+      <div class="r-pts ${cls}">${p.points.toLocaleString()}</div>
+      <div class="r-quizzes">${p.totalQuizzes||0}</div>
+      <div class="r-level"><span class="lv">Lv ${p.level||1}</span></div>
+      <div class="r-trend" style="${tColor}">${trend}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ════════════════════════════════
+   FILTER / SEARCH
+════════════════════════════════ */
+function setFilter(id, el){
+  currentFilter = id;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active','gold'));
+  el.classList.add('active');
+  if(id==='geral') el.classList.add('gold');
+  render();
+}
+
+function filterSearch(val){
+  searchTerm = val;
+  render();
+}
+
+function highlightRow(uid){
+  document.querySelectorAll('.rank-row').forEach(r=>r.style.outline='');
+  const el=document.getElementById('row-'+uid);
+  if(el){ el.style.outline='2px solid rgba(0,229,255,0.5)'; el.scrollIntoView({behavior:'smooth',block:'center'}); setTimeout(()=>el.style.outline='',2000); }
+}
+
+/* ════════════════════════════════
+   INIT
+════════════════════════════════ */
+function init(){
+  loadSession();
+  buildPlayerList();
+  render();
+
+  // show position toast
+  if(session){
+    const myPos = allPlayers.findIndex(p=>p.isMe)+1;
+    if(myPos>0) setTimeout(()=>toast('info',`A tua posição atual: #${myPos} 🎯`),800);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
